@@ -4,7 +4,18 @@ import { experimental_generateImage } from 'ai';
 
 export const imageDocumentHandler = createDocumentHandler<'image'>({
   kind: 'image',
-  onCreateDocument: async ({ title, dataStream }) => {
+  onCreateDocument: async ({ title, content, dataStream }) => {
+    // If content is provided, use it directly instead of generating new content
+    if (content) {
+      dataStream.write({
+        type: 'data-imageDelta',
+        data: content,
+        transient: true,
+      });
+      return content;
+    }
+
+    // Otherwise, generate content based on the title
     let draftContent = '';
 
     const { image } = await experimental_generateImage({

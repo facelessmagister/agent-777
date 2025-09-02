@@ -23,6 +23,9 @@ import { createDocument } from '@/lib/ai/tools/create-document';
 import { updateDocument } from '@/lib/ai/tools/update-document';
 import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
 import { getWeather } from '@/lib/ai/tools/get-weather';
+import { readDocument } from '@/lib/ai/tools/read-document';
+import { validateDocument } from '@/lib/ai/tools/validate-document';
+import { compareDocuments } from '@/lib/ai/tools/compare-documents';
 import { isProductionEnvironment } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
@@ -164,6 +167,9 @@ export async function POST(request: Request) {
                   'createDocument',
                   'updateDocument',
                   'requestSuggestions',
+                  'readDocument',
+                  'validateDocument',
+                  'compareDocuments',
                 ],
           experimental_transform: smoothStream({ chunking: 'word' }),
           tools: {
@@ -174,6 +180,9 @@ export async function POST(request: Request) {
               session,
               dataStream,
             }),
+            readDocument: readDocument({ session }),
+            validateDocument: validateDocument({ session }),
+            compareDocuments: compareDocuments({ session }),
           },
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,
