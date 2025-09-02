@@ -6,6 +6,7 @@ import type { requestSuggestions } from './ai/tools/request-suggestions';
 import type { readDocument } from './ai/tools/read-document';
 import type { validateDocument } from './ai/tools/validate-document';
 import type { compareDocuments } from './ai/tools/compare-documents';
+import type { documentFinder } from './ai/tools/document-finder'; // Added DocumentFinderAgent
 import type { InferUITool, UIMessage } from 'ai';
 
 import type { ArtifactKind } from '@/components/artifact';
@@ -28,6 +29,7 @@ type requestSuggestionsTool = InferUITool<
 type readDocumentTool = InferUITool<ReturnType<typeof readDocument>>;
 type validateDocumentTool = InferUITool<ReturnType<typeof validateDocument>>;
 type compareDocumentsTool = InferUITool<ReturnType<typeof compareDocuments>>;
+type documentFinderTool = InferUITool<ReturnType<typeof documentFinder>>; // Added DocumentFinderAgent
 
 export type ChatTools = {
   getWeather: weatherTool;
@@ -37,6 +39,7 @@ export type ChatTools = {
   readDocument: readDocumentTool;
   validateDocument: validateDocumentTool;
   compareDocuments: compareDocumentsTool;
+  documentFinder: documentFinderTool; // Added DocumentFinderAgent
 };
 
 export type CustomUIDataTypes = {

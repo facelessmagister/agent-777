@@ -8,8 +8,10 @@ import {
   eq,
   gt,
   gte,
+  ilike, // Added for DocumentFinderAgent
   inArray,
   lt,
+  lte, // Added for DocumentFinderAgent
   type SQL,
 } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
@@ -533,6 +535,89 @@ export async function getStreamIdsByChatId({ chatId }: { chatId: string }) {
     throw new ChatSDKError(
       'bad_request:database',
       'Failed to get stream ids by chat id',
+    );
+  }
+}
+
+// Added for DocumentFinderAgent - Enhanced document search functionality
+export async function searchDocumentsAdvanced({
+  userId,
+  titleQuery,
+  contentQuery,
+  kind,
+  dateFrom,
+  dateTo,
+  limit = 20,
+  offset = 0,
+}: {
+  userId: string;
+  titleQuery?: string;
+  contentQuery?: string;
+  kind?: string;
+  dateFrom?: Date;
+  dateTo?: Date;
+  limit?: number;
+  offset?: number;
+}) {
+  try {
+    // Build the query conditions
+    const conditions = [eq(document.userId, userId)];
+    
+    // Add title search condition
+    if (titleQuery) {
+      conditions.push(ilike(document.title, `%${titleQuery}%`));
+    }
+    
+    // Add content search condition
+    if (contentQuery) {
+      conditions.push(ilike(document.content, `%${contentQuery}%`));
+    }
+    
+    // Add kind filter
+    if (kind) {
+      conditions.push(eq(document.kind, kind as ArtifactKind));
+    }
+    
+    // Add date range conditions
+    if (dateFrom) {
+      conditions.push(gte(document.createdAt, dateFrom));
+    }
+    
+    if (dateTo) {
+      conditions.push(lte(document.createdAt, dateTo));
+    }
+    
+    // Execute the query
+    const documents = await db
+      .select({
+        id: document.id,
+        title: document.title,
+        kind: document.kind,
+        createdAt: document.createdAt,
+        contentPreview: document.content,
+      })
+      .from(document)
+      .where(and(...conditions))
+      .orderBy(desc(document.createdAt))
+      .limit(limit)
+      .offset(offset);
+    
+    // Process results to add content previews
+    const processedDocuments = documents.map((doc) => ({
+      id: doc.id,
+      title: doc.title,
+      kind: doc.kind,
+      createdAt: doc.createdAt,
+      contentPreview: doc.contentPreview 
+        ? doc.contentPreview.substring(0, 200) + (doc.contentPreview.length > 200 ? '...' : '')
+        : ''
+    }));
+    
+    return processedDocuments;
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to search documents with advanced filters',
     );
   }
 }

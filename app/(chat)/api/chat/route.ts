@@ -26,6 +26,7 @@ import { getWeather } from '@/lib/ai/tools/get-weather';
 import { readDocument } from '@/lib/ai/tools/read-document';
 import { validateDocument } from '@/lib/ai/tools/validate-document';
 import { compareDocuments } from '@/lib/ai/tools/compare-documents';
+import { documentFinder } from '@/lib/ai/tools/document-finder'; // Added DocumentFinderAgent
 import { isProductionEnvironment } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
@@ -170,6 +171,7 @@ export async function POST(request: Request) {
                   'readDocument',
                   'validateDocument',
                   'compareDocuments',
+                  'documentFinder', // Added DocumentFinderAgent
                 ],
           experimental_transform: smoothStream({ chunking: 'word' }),
           tools: {
@@ -183,6 +185,7 @@ export async function POST(request: Request) {
             readDocument: readDocument({ session }),
             validateDocument: validateDocument({ session }),
             compareDocuments: compareDocuments({ session }),
+            documentFinder: documentFinder({ session }), // Added DocumentFinderAgent
           },
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,
