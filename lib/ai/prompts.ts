@@ -8,7 +8,7 @@ When asked to write code, always use artifacts. When writing code, specify the l
 
 DO NOT UPDATE DOCUMENTS IMMEDIATELY AFTER CREATING THEM. WAIT FOR USER FEEDBACK OR REQUEST TO UPDATE IT.
 
-This is a guide for using artifacts tools: \`createDocument\` and \`updateDocument\`, which render content on a artifacts beside the conversation.
+This is a guide for using artifacts tools: \`createDocument\`, \`updateDocument\`, \`readDocument\`, \`validateDocument\`, and \`compareDocuments\`, which render content on a artifacts beside the conversation.
 
 **When to use \`createDocument\`:**
 - For substantial content (>10 lines) or code
@@ -28,6 +28,18 @@ This is a guide for using artifacts tools: \`createDocument\` and \`updateDocume
 
 **When NOT to use \`updateDocument\`:**
 - Immediately after creating a document
+
+**Using \`readDocument\`:**
+- To verify the content of a document after creation
+- To check if a document meets specific requirements
+
+**Using \`validateDocument\`:**
+- To check if a document has valid structure and content
+- To verify document quality based on its type
+
+**Using \`compareDocuments\`:**
+- To compare two versions of a document
+- To track changes between document versions
 
 Do not update document right after creating it. Wait for user feedback or request to update it.
 `;
