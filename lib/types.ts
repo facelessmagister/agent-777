@@ -62,6 +62,13 @@ export type CustomUIDataTypes = {
       kind: ArtifactKind;
       createdAt: Date;
       contentPreview: string;
+      versionCount?: number;
+      latestVersionTimestamp?: Date;
+      versions?: Array<{
+        id: string;
+        createdAt: Date;
+        title: string;
+      }>;
     }>;
     query: {
       titleQuery?: string;

@@ -343,6 +343,37 @@ export async function getDocumentById({ id }: { id: string }) {
   }
 }
 
+// Added for DocumentFinderAgent - Get a specific document version
+export async function getDocumentByVersion({ id, versionTimestamp }: { id: string; versionTimestamp?: Date }) {
+  try {
+    // If a specific version is requested, filter by timestamp
+    if (versionTimestamp) {
+      const documents = await db
+        .select()
+        .from(document)
+        .where(and(eq(document.id, id), eq(document.createdAt, versionTimestamp)))
+        .orderBy(desc(document.createdAt));
+      
+      return documents[0];
+    }
+    
+    // Otherwise, get the latest version
+    const documents = await db
+      .select()
+      .from(document)
+      .where(eq(document.id, id))
+      .orderBy(desc(document.createdAt))
+      .limit(1);
+    
+    return documents[0];
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get document by version',
+    );
+  }
+}
+
 export async function deleteDocumentsByIdAfterTimestamp({
   id,
   timestamp,
@@ -540,6 +571,7 @@ export async function getStreamIdsByChatId({ chatId }: { chatId: string }) {
 }
 
 // Added for DocumentFinderAgent - Enhanced document search functionality
+// Updated to handle document versions properly by grouping them under the same document ID
 export async function searchDocumentsAdvanced({
   userId,
   titleQuery,
@@ -587,33 +619,62 @@ export async function searchDocumentsAdvanced({
       conditions.push(lte(document.createdAt, dateTo));
     }
     
-    // Execute the query
-    const documents = await db
+    // Execute the query to get all matching documents
+    const allDocuments = await db
       .select({
         id: document.id,
         title: document.title,
         kind: document.kind,
         createdAt: document.createdAt,
-        contentPreview: document.content,
+        content: document.content,
       })
       .from(document)
       .where(and(...conditions))
-      .orderBy(desc(document.createdAt))
-      .limit(limit)
-      .offset(offset);
+      .orderBy(desc(document.createdAt));
     
-    // Process results to add content previews
-    const processedDocuments = documents.map((doc) => ({
-      id: doc.id,
-      title: doc.title,
-      kind: doc.kind,
-      createdAt: doc.createdAt,
-      contentPreview: doc.contentPreview 
-        ? doc.contentPreview.substring(0, 200) + (doc.contentPreview.length > 200 ? '...' : '')
-        : ''
-    }));
+    // Group documents by ID to handle versions properly
+    const documentGroups = allDocuments.reduce((acc, doc) => {
+      if (!acc[doc.id]) {
+        acc[doc.id] = [];
+      }
+      acc[doc.id].push(doc);
+      return acc;
+    }, {} as Record<string, typeof allDocuments>);
     
-    return processedDocuments;
+    // Get unique documents (one per ID) with latest version info
+    const uniqueDocuments = Object.entries(documentGroups)
+      .map(([id, versions]) => {
+        // Sort versions by createdAt descending to get the latest version first
+        const sortedVersions = versions.sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        
+        const latestVersion = sortedVersions[0];
+        
+        // Add version metadata for potential future use
+        return {
+          id: id,
+          title: latestVersion.title,
+          kind: latestVersion.kind,
+          createdAt: latestVersion.createdAt,
+          contentPreview: latestVersion.content 
+            ? latestVersion.content.substring(0, 200) + (latestVersion.content.length > 200 ? '...' : '')
+            : '',
+          versionCount: versions.length,
+          latestVersionTimestamp: latestVersion.createdAt,
+          versions: versions.map(v => ({
+            id: `${v.id}-${v.createdAt.getTime()}`,
+            createdAt: v.createdAt,
+            title: v.title
+          }))
+        };
+      })
+      .sort((a, b) => 
+        new Date(b.latestVersionTimestamp).getTime() - new Date(a.latestVersionTimestamp).getTime()
+      )
+      .slice(offset, offset + limit);
+    
+    return uniqueDocuments;
   } catch (error) {
     throw new ChatSDKError(
       'bad_request:database',

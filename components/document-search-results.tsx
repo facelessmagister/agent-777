@@ -15,6 +15,13 @@ interface DocumentSearchResult {
   kind: ArtifactKind;
   createdAt: Date;
   contentPreview: string;
+  versionCount?: number;
+  latestVersionTimestamp?: Date;
+  versions?: Array<{
+    id: string;
+    createdAt: Date;
+    title: string;
+  }>;
 }
 
 interface DocumentSearchResultsProps {
@@ -122,7 +129,7 @@ export function DocumentSearchResults({ results, query, isReadonly }: DocumentSe
               <div className="space-y-3">
                 {currentResults.map((document) => (
                   <Card 
-                    key={document.id} 
+                    key={`${document.id}-${document.createdAt.getTime()}`} 
                     className="cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={(e) => handleDocumentClick(document, e)}
                   >
@@ -137,6 +144,11 @@ export function DocumentSearchResults({ results, query, isReadonly }: DocumentSe
                             <Badge variant="outline" className="text-xs">
                               {getKindLabel(document.kind)}
                             </Badge>
+                            {document.versionCount && document.versionCount > 1 && (
+                              <Badge variant="secondary" className="text-xs">
+                                {document.versionCount} versions
+                              </Badge>
+                            )}
                           </div>
                           <p className="text-muted-foreground text-sm mt-1 line-clamp-2">
                             {document.contentPreview}
