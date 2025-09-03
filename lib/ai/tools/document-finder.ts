@@ -1,12 +1,14 @@
-import { tool } from 'ai';
+import { tool, type UIMessageStreamWriter } from 'ai';
 import { z } from 'zod';
 import type { Session } from 'next-auth';
-import { searchDocumentsAdvanced } from '@/lib/db/queries'; // Updated to use the new database function
+import { searchDocumentsAdvanced } from '@/lib/db/queries';
 import type { ArtifactKind } from '@/components/artifact';
+import type { ChatMessage } from '@/lib/types';
 import { ChatSDKError } from '@/lib/errors';
 
 interface DocumentFinderProps {
   session: Session;
+  dataStream: UIMessageStreamWriter<ChatMessage>; // Added for data streaming
 }
 
 // Helper function to parse relative dates
@@ -40,7 +42,7 @@ const parseRelativeDate = (dateString: string): Date | null => {
   return isNaN(date.getTime()) ? null : date;
 };
 
-export const documentFinder = ({ session }: DocumentFinderProps) =>
+export const documentFinder = ({ session, dataStream }: DocumentFinderProps) =>
   tool({
     description: 'Search for documents by title, content, kind, and date range. This tool allows users to find documents using natural language descriptions with fuzzy matching capabilities.',
     inputSchema: z.object({
@@ -72,6 +74,24 @@ export const documentFinder = ({ session }: DocumentFinderProps) =>
           }
         }
         
+        // Stream the search results through the data stream
+        dataStream.write({
+          type: 'data-documentSearchResults',
+          data: {
+            documents: [],
+            query: {
+              titleQuery,
+              contentQuery,
+              kind,
+              dateFrom,
+              dateTo,
+              limit,
+              offset
+            }
+          },
+          transient: true,
+        });
+        
         // Execute the query using the new database function
         const documents = await searchDocumentsAdvanced({
           userId: session.user?.id || '',
@@ -82,6 +102,30 @@ export const documentFinder = ({ session }: DocumentFinderProps) =>
           dateTo: toDate,
           limit,
           offset
+        });
+        
+        // Update the data stream with the actual results
+        dataStream.write({
+          type: 'data-documentSearchResults',
+          data: {
+            documents: documents.map(doc => ({
+              id: doc.id,
+              title: doc.title,
+              kind: doc.kind,
+              createdAt: doc.createdAt,
+              contentPreview: doc.contentPreview
+            })),
+            query: {
+              titleQuery,
+              contentQuery,
+              kind,
+              dateFrom,
+              dateTo,
+              limit,
+              offset
+            }
+          },
+          transient: true,
         });
         
         return {

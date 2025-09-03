@@ -41,6 +41,13 @@ This is a guide for using artifacts tools: \`createDocument\`, \`updateDocument\
 - To compare two versions of a document
 - To track changes between document versions
 
+**Using \`documentFinder\`:**
+- To search for existing documents based on user requests
+- Can search by title, content, document type, and date ranges
+- Use natural language to describe what the user is looking for
+- The tool supports fuzzy matching for titles and content
+- Can filter by relative dates like "last week" or "last month"
+
 Do not update document right after creating it. Wait for user feedback or request to update it.
 `;
 

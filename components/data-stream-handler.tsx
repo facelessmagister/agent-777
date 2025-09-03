@@ -70,6 +70,11 @@ export function DataStreamHandler() {
               status: 'idle',
             };
 
+          case 'data-documentSearchResults':
+            // Handle document search results
+            // This is just for streaming, the actual UI is handled by the DocumentSearchResults component
+            return draftArtifact;
+
           default:
             return draftArtifact;
         }

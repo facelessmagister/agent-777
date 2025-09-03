@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { memo, useState } from 'react';
 import type { Vote } from '@/lib/db/schema';
 import { DocumentToolResult } from './document';
+import { DocumentSearchResults } from './document-search-results'; // Added DocumentFinderAgent
 import { PencilEditIcon, SparklesIcon } from './icons';
 import { Response } from './elements/response';
 import { MessageContent } from './elements/message';
@@ -281,6 +282,40 @@ const PurePreviewMessage = ({
                               <DocumentToolResult
                                 type="request-suggestions"
                                 result={part.output}
+                                isReadonly={isReadonly}
+                              />
+                            )
+                          }
+                          errorText={undefined}
+                        />
+                      )}
+                    </ToolContent>
+                  </Tool>
+                );
+              }
+
+              // Handle DocumentFinderAgent tool results
+              if (type === 'tool-documentFinder') {
+                const { toolCallId, state } = part;
+
+                return (
+                  <Tool key={toolCallId} defaultOpen={true}>
+                    <ToolHeader type="tool-documentFinder" state={state} />
+                    <ToolContent>
+                      {state === 'input-available' && (
+                        <ToolInput input={part.input} />
+                      )}
+                      {state === 'output-available' && (
+                        <ToolOutput
+                          output={
+                            'error' in part.output ? (
+                              <div className="p-2 text-red-500 rounded border">
+                                Error: {String(part.output.error)}
+                              </div>
+                            ) : (
+                              <DocumentSearchResults
+                                results={part.output.documents}
+                                query={part.output.query}
                                 isReadonly={isReadonly}
                               />
                             )

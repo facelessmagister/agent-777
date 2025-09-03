@@ -54,6 +54,25 @@ export type CustomUIDataTypes = {
   kind: ArtifactKind;
   clear: null;
   finish: null;
+  // Document search results
+  documentSearchResults: {
+    documents: Array<{
+      id: string;
+      title: string;
+      kind: ArtifactKind;
+      createdAt: Date;
+      contentPreview: string;
+    }>;
+    query: {
+      titleQuery?: string;
+      contentQuery?: string;
+      kind?: ArtifactKind;
+      dateFrom?: string;
+      dateTo?: string;
+      limit?: number;
+      offset?: number;
+    };
+  };
 };
 
 export type ChatMessage = UIMessage<

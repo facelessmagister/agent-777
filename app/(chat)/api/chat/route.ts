@@ -185,7 +185,7 @@ export async function POST(request: Request) {
             readDocument: readDocument({ session }),
             validateDocument: validateDocument({ session }),
             compareDocuments: compareDocuments({ session }),
-            documentFinder: documentFinder({ session }), // Added DocumentFinderAgent
+            documentFinder: documentFinder({ session, dataStream }), // Updated to pass dataStream
           },
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,
