@@ -1,5 +1,7 @@
 # Plan for Implementing Slide Document Creation Workflow
 
+* This feature is a part of Agent-777-V1.2
+
 ## Initial System Design
 Current Document/Artifact Types: `text`, `code`, `image`, `sheet`
 Storage: All documents stored in a single [Document](file://c:\Users\netfl\OneDrive\Desktop\faceless_magister_projects\agent-777\lib\db\schema.ts#L125-L125) table with composite primary key (id, createdAt) for versioning
