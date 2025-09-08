@@ -60,3 +60,60 @@ pnpm dev
 ```
 
 Your app template should now be running on [localhost:3000](http://localhost:3000).
+
+
+# Current development
+
+## Application Capabilities Summary
+
+### AI Agents
+The application utilizes two distinct AI agents:
+- **Chat Model (grok-2-1212)**: Primary model for general-purpose conversations and content creation
+- **Reasoning Model (grok-3-mini-beta)**: Advanced model for complex reasoning tasks, with specialized thinking capabilities
+
+### Available Tools
+The application provides a suite of tools accessible to the AI agents:
+- **createDocument**: Generates new documents of various types (text, code, image, sheet)
+- **updateDocument**: Modifies existing documents based on specific instructions
+- **getWeather**: Retrieves current weather information for any location
+- **requestSuggestions**: Generates suggestions for improving document content
+
+### Core Workflows
+1. **Chat Interaction**: Users engage in conversations with AI agents, with support for both general chat and advanced reasoning
+2. **Document Creation**: AI can create various document types using the createDocument tool, which are then stored and accessible in the UI
+3. **Document Editing**: Existing documents can be updated using natural language instructions through the updateDocument tool
+4. **Content Generation**: Specialized workflows for generating code snippets, images, spreadsheets, and text documents
+5. **Weather Information**: Real-time weather data retrieval based on location coordinates
+
+### Document Lifecycle Management
+The application provides comprehensive document management capabilities:
+
+#### Document Types
+- **Text Documents**: Markdown-supported content for essays, articles, and general text
+- **Code Documents**: Programming code snippets with syntax highlighting
+- **Image Documents**: AI-generated images stored as base64 encoded data
+- **Sheet Documents**: CSV-formatted spreadsheet data
+
+#### Versioning System
+- Documents are stored with a composite primary key (id + createdAt) enabling full version history
+- Each document update creates a new version while preserving previous versions
+- Users can browse, compare, and revert to any previous version of a document
+- The UI provides version navigation controls for seamless historical access
+
+#### Storage & Persistence
+- All documents are persisted in a Neon Serverless Postgres database
+- Document content is stored as plain text with type-specific formatting
+- Metadata including title, creation timestamp, and ownership is maintained
+- Related suggestions and user interactions are also stored for context
+
+#### Retrieval & Access
+- Documents can be retrieved by ID with options to get all versions or latest version
+- API endpoints provide programmatic access to document content
+- Search functionality allows users to find documents by various criteria
+- Access controls ensure document privacy based on user ownership
+
+#### UI Integration
+- Real-time document rendering in a dedicated artifact panel
+- Side-by-side comparison view for document versions
+- Inline editing capabilities with automatic saving
+- Visual indicators for document status and version information

@@ -20,6 +20,7 @@ export interface SaveDocumentProps {
 export interface CreateDocumentCallbackProps {
   id: string;
   title: string;
+  content?: string; // Add optional content parameter
   dataStream: UIMessageStreamWriter<ChatMessage>;
   session: Session;
 }
@@ -48,6 +49,7 @@ export function createDocumentHandler<T extends ArtifactKind>(config: {
       const draftContent = await config.onCreateDocument({
         id: args.id,
         title: args.title,
+        content: args.content, // Pass the content parameter
         dataStream: args.dataStream,
         session: args.session,
       });

@@ -5,15 +5,20 @@ import { updateDocumentPrompt } from '@/lib/ai/prompts';
 
 export const textDocumentHandler = createDocumentHandler<'text'>({
   kind: 'text',
-  onCreateDocument: async ({ title, dataStream }) => {
+  onCreateDocument: async ({ title, content, dataStream }) => {
     let draftContent = '';
+
+    // Create a more detailed prompt using the content description if provided
+    const prompt = content 
+      ? `${title}\n\n${content}`
+      : title;
 
     const { fullStream } = streamText({
       model: myProvider.languageModel('artifact-model'),
       system:
         'Write about the given topic. Markdown is supported. Use headings wherever appropriate.',
       experimental_transform: smoothStream({ chunking: 'word' }),
-      prompt: title,
+      prompt,
     });
 
     for await (const delta of fullStream) {

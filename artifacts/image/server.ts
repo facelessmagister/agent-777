@@ -4,12 +4,17 @@ import { experimental_generateImage } from 'ai';
 
 export const imageDocumentHandler = createDocumentHandler<'image'>({
   kind: 'image',
-  onCreateDocument: async ({ title, dataStream }) => {
+  onCreateDocument: async ({ title, content, dataStream }) => {
     let draftContent = '';
+
+    // Create a more detailed prompt using the content description if provided
+    const prompt = content 
+      ? `${title}\n\n${content}`
+      : title;
 
     const { image } = await experimental_generateImage({
       model: myProvider.imageModel('small-model'),
-      prompt: title,
+      prompt,
       n: 1,
     });
 

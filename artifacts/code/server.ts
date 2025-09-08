@@ -6,13 +6,18 @@ import { createDocumentHandler } from '@/lib/artifacts/server';
 
 export const codeDocumentHandler = createDocumentHandler<'code'>({
   kind: 'code',
-  onCreateDocument: async ({ title, dataStream }) => {
+  onCreateDocument: async ({ title, content, dataStream }) => {
     let draftContent = '';
+
+    // Create a more detailed prompt using the content description if provided
+    const prompt = content 
+      ? `${title}\n\n${content}`
+      : title;
 
     const { fullStream } = streamObject({
       model: myProvider.languageModel('artifact-model'),
       system: codePrompt,
-      prompt: title,
+      prompt,
       schema: z.object({
         code: z.string(),
       }),

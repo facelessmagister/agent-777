@@ -20,8 +20,9 @@ export const createDocument = ({ session, dataStream }: CreateDocumentProps) =>
     inputSchema: z.object({
       title: z.string(),
       kind: z.enum(artifactKinds),
+      content: z.string().optional().describe('Detailed description of the document content to be created'),
     }),
-    execute: async ({ title, kind }) => {
+    execute: async ({ title, kind, content }) => {
       const id = generateUUID();
 
       dataStream.write({
@@ -42,6 +43,15 @@ export const createDocument = ({ session, dataStream }: CreateDocumentProps) =>
         transient: true,
       });
 
+      // If content is provided, send it to the data stream
+      if (content) {
+        dataStream.write({
+          type: 'data-content',
+          data: content,
+          transient: true,
+        });
+      }
+
       dataStream.write({
         type: 'data-clear',
         data: null,
@@ -60,6 +70,7 @@ export const createDocument = ({ session, dataStream }: CreateDocumentProps) =>
       await documentHandler.onCreateDocument({
         id,
         title,
+        content, // Pass the content field to document handlers
         dataStream,
         session,
       });
@@ -70,7 +81,9 @@ export const createDocument = ({ session, dataStream }: CreateDocumentProps) =>
         id,
         title,
         kind,
-        content: 'A document was created and is now visible to the user.',
+        content: content 
+          ? `A document was created with the provided content description.` 
+          : 'A document was created and is now visible to the user.',
       };
     },
   });
