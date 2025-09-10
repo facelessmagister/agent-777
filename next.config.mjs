@@ -2,6 +2,9 @@
 
 const nextConfig = {
   reactStrictMode: true,
+  images: {
+    domains: ['avatar.vercel.sh'],
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: '2mb',

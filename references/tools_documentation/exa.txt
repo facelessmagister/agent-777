@@ -1,0 +1,3378 @@
+# Vercel AI SDK
+
+Learn how to build a web agent with Vercel AI SDK and Exa. Create intelligent agents that can search the web for up-to-date information and provide contextual responses.
+
+**[View the guide in Vercel AI SDK docs →](https://ai-sdk.dev/cookbook/node/web-search-agent#exa)**
+
+## Web Search Tool Implementation
+
+Here's how to create a web search tool using Exa with Vercel AI SDK:
+
+```javascript
+import { generateText, tool } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { z } from 'zod';
+import Exa from 'exa-js';
+
+export const exa = new Exa(process.env.EXA_API_KEY);
+
+export const webSearch = tool({
+  description: 'Search the web for up-to-date information',
+  parameters: z.object({
+    query: z.string().min(1).max(100).describe('The search query'),
+  }),
+  execute: async ({ query }) => {
+    const { results } = await exa.searchAndContents(query, {
+      livecrawl: 'always',
+      numResults: 3,
+    });
+    return results.map(result => ({
+      title: result.title,
+      url: result.url,
+      content: result.text.slice(0, 1000), // take just the first 1000 characters
+      publishedDate: result.publishedDate,
+    }));
+  },
+});
+
+const { text } = await generateText({
+  model: openai('gpt-4o-mini'), // can be any model that supports tools
+  prompt: 'What happened in San Francisco last week?',
+  tools: {
+    webSearch,
+  },
+  maxSteps: 2,
+});
+```
+
+For detailed instructions on building web agents with Vercel AI SDK and Exa, visit the [Vercel AI SDK documentation](https://ai-sdk.dev/cookbook/node/web-search-agent#exa).
+
+# TypeScript SDK Specification
+
+For ChatGPT-based [TypeScript SDK](https://github.com/exa-labs/exa-js) assistance, [go here](https://chat.openai.com/g/g-Xx4N36Q8Y-exa-formerly-metaphor-ts-js-guide).
+
+## Getting started
+
+Installing the [exa-js](https://github.com/exa-labs/exa-js) SDK
+
+<Tabs>
+  <Tab title="npm">
+    ```npm
+
+    npm install exa-js
+    ```
+  </Tab>
+
+  <Tab title="pnpm">
+    ```pnpm
+    pnpm install exa-js
+    ```
+  </Tab>
+</Tabs>
+
+and then instantiate an Exa client
+
+```TypeScript TypeScript
+
+import Exa from 'exa-js';
+
+const exa = new Exa(process.env.EXA_API_KEY);
+```
+
+<Card title="Get API Key" icon="key" horizontal href="https://dashboard.exa.ai/login?redirect=/docs?path=/reference/typescript-sdk-specification">
+  Follow this link to get your API key
+</Card>
+
+<br />
+
+***
+
+## `search` Method
+
+Perform an Exa search given an input query and retrieve a list of relevant results as links.
+
+<br />
+
+### Input Example
+
+```TypeScript
+
+const result = await exa.search(
+  "hottest AI startups",
+  {
+    numResults: 2
+  }
+);
+```
+
+<br />
+
+### Input Parameters
+
+| Parameter          | Type      | Description                                                                                                                                                                                                                                                | Default   |
+| ------------------ | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| query              | string    | The input query string.                                                                                                                                                                                                                                    | Required  |
+| numResults         | number    | Number of search results to return.                                                                                                                                                                                                                        | 10        |
+| includeDomains     | string\[] | List of domains to include in the search.                                                                                                                                                                                                                  | undefined |
+| excludeDomains     | string\[] | List of domains to exclude in the search.                                                                                                                                                                                                                  | undefined |
+| startCrawlDate     | string    | Results will only include links **crawled** after this date.                                                                                                                                                                                               | undefined |
+| endCrawlDate       | string    | Results will only include links **crawled** before this date.                                                                                                                                                                                              | undefined |
+| startPublishedDate | string    | Results will only include links with a **published** date after this date.                                                                                                                                                                                 | undefined |
+| endPublishedDate   | string    | Results will only include links with a **published** date before this date.                                                                                                                                                                                | undefined |
+| type               | string    | The type of search, "keyword" or "neural".                                                                                                                                                                                                                 | "auto"    |
+| category           | string    | data category to focus on when searching, with higher comprehensivity and data cleanliness. Available categories: "company", "research paper", "news", "linkedin profile", "github", "tweet", "movie", "song", "personal site", "pdf", "financial report". | undefined |
+
+<br />
+
+### Returns Example
+
+```JSON
+
+{
+  "autopromptString": "Here is a link to one of the hottest AI startups:",
+  "results": [
+    {
+
+      "title": "Adept: Useful General Intelligence",
+      "id": "https://www.adept.ai/",
+      "url": "https://www.adept.ai/",
+      "publishedDate": "2000-01-01",
+      "author": null
+    },
+    {
+
+      "title": "Home | Tenyx, Inc.",
+      "id": "https://www.tenyx.com/",
+      "url": "https://www.tenyx.com/",
+      "publishedDate": "2019-09-10",
+      "author": null
+    }
+  ]
+}
+```
+
+<br />
+
+### Return Parameters
+
+### `SearchResponse`
+
+| Field   | Type      | Description            |
+| ------- | --------- | ---------------------- |
+| results | Result\[] | List of Result objects |
+
+<br />
+
+### `Result` Object
+
+| Field | Type           | Description                   |
+| ----- | -------------- | ----------------------------- |
+| url   | string         | URL of the search result      |
+| id    | string         | Temporary ID for the document |
+| title | string \| null | Title of the search result    |
+
+\| publishedDate? | string         | Estimated creation date                       |
+\| author?        | string         | Author of the content, if available           |
+
+<br />
+
+## `searchAndContents` Method
+
+Perform an Exa search given an input query and retrieve a list of relevant results as links, optionally including the full text and/or highlights of the content.
+
+<br />
+
+### Input Example
+
+```TypeScript TypeScript
+
+// Search with full text content
+const resultWithText = await exa.searchAndContents(
+  "AI in healthcare",
+  {
+    text: true,
+    numResults: 2
+  }
+);
+
+// Search with highlights
+const resultWithHighlights = await exa.searchAndContents(
+  "AI in healthcare",
+  {
+    highlights: true,
+    numResults: 2
+  }
+);
+
+// Search with both text and highlights
+const resultWithTextAndHighlights = await exa.searchAndContents(
+  "AI in healthcare",
+  {
+    text: true,
+    highlights: true,
+    numResults: 2
+  }
+);
+
+// Search with structured summary schema
+const companySchema = {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Company Information",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "The name of the company"
+    },
+    "industry": {
+      "type": "string",
+      "description": "The industry the company operates in"
+    },
+    "foundedYear": {
+      "type": "number",
+      "description": "The year the company was founded"
+    },
+    "keyProducts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of key products or services offered by the company"
+    },
+    "competitors": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of main competitors"
+    }
+  },
+  "required": ["name", "industry"]
+};
+
+const resultWithStructuredSummary = await exa.searchAndContents(
+  "OpenAI company information",
+  {
+    summary: {
+      schema: companySchema
+    },
+    category: "company",
+    numResults: 3
+  }
+);
+
+// Parse the structured summary (returned as a JSON string)
+const firstResult = resultWithStructuredSummary.results[0];
+if (firstResult.summary) {
+  const structuredData = JSON.parse(firstResult.summary);
+  console.log(structuredData.name);        // e.g. "OpenAI"
+  console.log(structuredData.industry);    // e.g. "Artificial Intelligence"
+  console.log(structuredData.keyProducts); // e.g. ["GPT-4", "DALL-E", "ChatGPT"]
+}
+```
+
+<br />
+
+### Input Parameters
+
+| Parameter          | Type                                                                             | Description                                                                                                                                                                                                                                                     | Default   |
+| ------------------ | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| query              | string                                                                           | The input query string.                                                                                                                                                                                                                                         | Required  |
+| text               | boolean \| \{ maxCharacters?: number, includeHtmlTags?: boolean }                | If provided, includes the full text of the content in the results.                                                                                                                                                                                              | undefined |
+| highlights         | boolean \| \{ query?: string, numSentences?: number, highlightsPerUrl?: number } | If provided, includes highlights of the content in the results.                                                                                                                                                                                                 | undefined |
+| numResults         | number                                                                           | Number of search results to return.                                                                                                                                                                                                                             | 10        |
+| includeDomains     | string\[]                                                                        | List of domains to include in the search.                                                                                                                                                                                                                       | undefined |
+| excludeDomains     | string\[]                                                                        | List of domains to exclude in the search.                                                                                                                                                                                                                       | undefined |
+| startCrawlDate     | string                                                                           | Results will only include links **crawled** after this date.                                                                                                                                                                                                    | undefined |
+| endCrawlDate       | string                                                                           | Results will only include links **crawled** before this date.                                                                                                                                                                                                   | undefined |
+| startPublishedDate | string                                                                           | Results will only include links with a **published** date after this date.                                                                                                                                                                                      | undefined |
+| endPublishedDate   | string                                                                           | Results will only include links with a **published** date before this date.                                                                                                                                                                                     | undefined |
+| type               | string                                                                           | The type of search, "keyword" or "neural".                                                                                                                                                                                                                      | "auto"    |
+| category           | string                                                                           | A data category to focus on when searching, with higher comprehensivity and data cleanliness. Available categories: "company", "research paper", "news", "linkedin profile", "github", "tweet", "movie", "song", "personal site", "pdf" and "financial report". | undefined |
+
+<br />
+
+### Returns Example
+
+```JSON JSON
+
+{
+  "results": [
+    {
+
+      "title": "2023 AI Trends in Health Care",
+      "id": "https://aibusiness.com/verticals/2023-ai-trends-in-health-care-",
+      "url": "https://aibusiness.com/verticals/2023-ai-trends-in-health-care-",
+      "publishedDate": "2022-12-29",
+      "author": "Wylie Wong",
+      "text": "While the health care industry was initially slow to [... TRUNCATED FOR BREVITY ...]",
+      "highlights": [
+        "But to do so, many health care institutions would like to share data, so they can build a more comprehensive dataset to use to train an AI model. Traditionally, they would have to move the data to one central repository. However, with federated or swarm learning, the data does not have to move. Instead, the AI model goes to each individual health care facility and trains on the data, he said. This way, health care providers can maintain security and governance over their data."
+      ],
+      "highlightScores": [
+        0.5566554069519043
+      ]
+    },
+    {
+
+      "title": "AI in healthcare: Innovative use cases and applications",
+      "id": "https://www.leewayhertz.com/ai-use-cases-in-healthcare",
+      "url": "https://www.leewayhertz.com/ai-use-cases-in-healthcare",
+      "publishedDate": "2023-02-13",
+      "author": "Akash Takyar",
+      "text": "The integration of AI in healthcare is not [... TRUNCATED FOR BREVITY ...]",
+      "highlights": [
+        "The ability of AI to analyze large amounts of medical data and identify patterns has led to more accurate and timely diagnoses. This has been especially helpful in identifying complex medical conditions, which may be difficult to detect using traditional methods. Here are some examples of successful implementation of AI in healthcare. IBM Watson Health: IBM Watson Health is an AI-powered system used in healthcare to improve patient care and outcomes. The system uses natural language processing and machine learning to analyze large amounts of data and provide personalized treatment plans for patients."
+      ],
+      "highlightScores": [
+        0.6563674807548523
+      ]
+    }
+  ]
+}
+```
+
+<br />
+
+### Return Parameters
+
+<br />
+
+### `SearchResponse`
+
+| Field   | Type                | Description                  |
+| ------- | ------------------- | ---------------------------- |
+| results | SearchResult\<T>\[] | List of SearchResult objects |
+
+<br />
+
+### `SearchResult`
+
+Extends the `Result` object from the `search` method with additional fields based on `T`:
+
+| Field            | Type      | Description                                    |
+| ---------------- | --------- | ---------------------------------------------- |
+| text?            | string    | Text of the search result page (if requested)  |
+| highlights?      | string\[] | Highlights of the search result (if requested) |
+| highlightScores? | number\[] | Scores of the highlights (if requested)        |
+
+Note: The actual fields present in the `SearchResult<T>` object depend on the options provided in the `searchAndContents` call.
+
+<br />
+
+## `findSimilar` Method
+
+Find a list of similar results based on a webpage's URL.
+
+<br />
+
+### Input Example
+
+```TypeScript
+
+const similarResults = await exa.findSimilar(
+  "https://www.example.com",
+  {
+    numResults: 2,
+    excludeSourceDomain: true
+  }
+);
+```
+
+<br />
+
+### Input Parameters
+
+| Parameter           | Type      | Description                                                                                   | Default   |
+| ------------------- | --------- | --------------------------------------------------------------------------------------------- | --------- |
+| url                 | string    | The URL of the webpage to find similar results for.                                           | Required  |
+| numResults          | number    | Number of similar results to return.                                                          | undefined |
+| includeDomains      | string\[] | List of domains to include in the search.                                                     | undefined |
+| excludeDomains      | string\[] | List of domains to exclude from the search.                                                   | undefined |
+| startCrawlDate      | string    | Results will only include links **crawled** after this date.                                  | undefined |
+| endCrawlDate        | string    | Results will only include links **crawled** before this date.                                 | undefined |
+| startPublishedDate  | string    | Results will only include links with a **published** date after this date.                    | undefined |
+| endPublishedDate    | string    | Results will only include links with a **published** date before this date.                   | undefined |
+| excludeSourceDomain | boolean   | If true, excludes results from the same domain as the input URL.                              | undefined |
+| category            | string    | A data category to focus on when searching, with higher comprehensivity and data cleanliness. | undefined |
+
+<br />
+
+### Returns Example
+
+```JSON JSON
+
+{
+  "results": [
+    {
+
+      "title": "Play New Free Online Games Every Day",
+      "id": "https://www.minigames.com/new-games",
+      "url": "https://www.minigames.com/new-games",
+      "publishedDate": "2000-01-01",
+      "author": null
+    },
+    {
+
+      "title": "Play The best Online Games",
+      "id": "https://www.minigames.com/",
+      "url": "https://www.minigames.com/",
+      "publishedDate": "2000-01-01",
+      "author": null
+    }
+  ]
+}
+```
+
+<br />
+
+### Return Parameters
+
+<br />
+
+### `SearchResponse`
+
+| Field   | Type      | Description            |
+| ------- | --------- | ---------------------- |
+| results | Result\[] | List of Result objects |
+
+<br />
+
+### `Result` Object
+
+| Field | Type           | Description                   |
+| ----- | -------------- | ----------------------------- |
+| url   | string         | URL of the search result      |
+| id    | string         | Temporary ID for the document |
+| title | string \| null | Title of the search result    |
+
+\| publishedDate? | string         | Estimated creation date                       |
+\| author?        | string         | Author of the content, if available           |
+
+<br />
+
+***
+
+## `findSimilarAndContents` Method
+
+Find a list of similar results based on a webpage's URL, optionally including the text content or highlights of each result.
+
+<br />
+
+### Input Example
+
+```TypeScript TypeScript
+
+// Find similar with full text content
+const similarWithText = await exa.findSimilarAndContents(
+  "https://www.example.com/article",
+  {
+    text: true,
+    numResults: 2
+  }
+);
+
+// Find similar with highlights
+const similarWithHighlights = await exa.findSimilarAndContents(
+  "https://www.example.com/article",
+  {
+    highlights: true,
+    numResults: 2
+  }
+);
+
+// Find similar with both text and highlights
+const similarWithTextAndHighlights = await exa.findSimilarAndContents(
+  "https://www.example.com/article",
+  {
+    text: true,
+    highlights: true,
+    numResults: 2,
+    excludeSourceDomain: true
+  }
+);
+```
+
+<br />
+
+### Input Parameters
+
+| Parameter           | Type                                                                             | Description                                                                                   | Default   |
+| ------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | --------- |
+| url                 | string                                                                           | The URL of the webpage to find similar results for.                                           | Required  |
+| text                | boolean \| \{ maxCharacters?: number, includeHtmlTags?: boolean }                | If provided, includes the full text of the content in the results.                            | undefined |
+| highlights          | boolean \| \{ query?: string, numSentences?: number, highlightsPerUrl?: number } | If provided, includes highlights of the content in the results.                               | undefined |
+| numResults          | number                                                                           | Number of similar results to return.                                                          | undefined |
+| includeDomains      | string\[]                                                                        | List of domains to include in the search.                                                     | undefined |
+| excludeDomains      | string\[]                                                                        | List of domains to exclude from the search.                                                   | undefined |
+| startCrawlDate      | string                                                                           | Results will only include links **crawled** after this date.                                  | undefined |
+| endCrawlDate        | string                                                                           | Results will only include links **crawled** before this date.                                 | undefined |
+| startPublishedDate  | string                                                                           | Results will only include links with a **published** date after this date.                    | undefined |
+| endPublishedDate    | string                                                                           | Results will only include links with a **published** date before this date.                   | undefined |
+| excludeSourceDomain | boolean                                                                          | If true, excludes results from the same domain as the input URL.                              | undefined |
+| category            | string                                                                           | A data category to focus on when searching, with higher comprehensivity and data cleanliness. | undefined |
+
+<br />
+
+### Returns Example
+
+```JSON JSON
+
+{
+  "results": [
+    {
+
+      "title": "Similar Article: AI and Machine Learning",
+      "id": "https://www.similarsite.com/ai-ml-article",
+      "url": "https://www.similarsite.com/ai-ml-article",
+      "publishedDate": "2023-05-15",
+      "author": "Jane Doe",
+      "text": "Artificial Intelligence (AI) and Machine Learning (ML) are revolutionizing various industries. [... TRUNCATED FOR BREVITY ...]",
+      "highlights": [
+        "AI and ML are transforming how businesses operate, enabling more efficient processes and data-driven decision making.",
+        "The future of AI looks promising, with potential applications in healthcare, finance, and autonomous vehicles."
+      ],
+      "highlightScores": [
+        0.95,
+        0.89
+      ]
+    },
+    {
+
+      "title": "The Impact of AI on Modern Technology",
+      "id": "https://www.techblog.com/ai-impact",
+      "url": "https://www.techblog.com/ai-impact",
+      "publishedDate": "2023-06-01",
+      "author": "John Smith",
+      "text": "In recent years, artificial intelligence has made significant strides in various technological domains. [... TRUNCATED FOR BREVITY ...]",
+      "highlights": [
+        "AI is not just a buzzword; it's a transformative technology that's reshaping industries and creating new opportunities.",
+        "As AI continues to evolve, ethical considerations and responsible development become increasingly important."
+      ],
+      "highlightScores": [
+        0.92,
+        0.88
+      ]
+    }
+  ]
+}
+```
+
+<br />
+
+### Return Parameters
+
+<br />
+
+### `SearchResponse`
+
+| Field   | Type                | Description                  |
+| ------- | ------------------- | ---------------------------- |
+| results | SearchResult\<T>\[] | List of SearchResult objects |
+
+## SearchResult
+
+Extends the `Result` object with additional fields based on the requested content:
+
+| Field | Type     | Description                   |                            |
+| ----- | -------- | ----------------------------- | -------------------------- |
+| url   | string   | URL of the search result      |                            |
+| id    | string   | Temporary ID for the document |                            |
+| title | \`string | null\`                        | Title of the search result |
+
+\| publishedDate?   | string     | Estimated creation date                        |                            |
+\| author?          | string     | Author of the content, if available            |                            |
+\| text?            | string     | Text of the search result page (if requested)  |                            |
+\| highlights?      | string\[] | Highlights of the search result (if requested) |                            |
+\| highlightScores? | number\[] | Scores of the highlights (if requested)        |
+
+Note: The actual fields present in the `SearchResult<T>` object depend on the options provided in the `findSimilarAndContents` call.
+
+<br />
+
+***
+
+## `getContents` Method
+
+Retrieves contents of documents based on a list of document IDs.
+
+<br />
+
+### Input Example
+
+```TypeScript TypeScript
+
+// Get contents for a single ID
+const singleContent = await exa.getContents("https://www.example.com/article");
+
+// Get contents for multiple IDs
+const multipleContents = await exa.getContents([
+  "https://www.example.com/article1",
+  "https://www.example.com/article2"
+]);
+
+// Get contents with specific options
+const contentsWithOptions = await exa.getContents(
+  ["https://www.example.com/article1", "https://www.example.com/article2"],
+  {
+    text: { maxCharacters: 1000 },
+    highlights: { query: "AI", numSentences: 2 }
+  }
+);
+```
+
+<br />
+
+### Input Parameters
+
+| Parameter  | Type                                                                             | Description                                                        | Default   |
+| ---------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------ | --------- |
+| ids        | string \| string\[] \| SearchResult\[]\`                                         | A single ID, an array of IDs, or an array of SearchResults.        | Required  |
+| text       | boolean \| \{ maxCharacters?: number, includeHtmlTags?: boolean }                | If provided, includes the full text of the content in the results. | undefined |
+| highlights | boolean \| \{ query?: string, numSentences?: number, highlightsPerUrl?: number } | If provided, includes highlights of the content in the results.    | undefined |
+
+<br />
+
+### Returns Example
+
+```JSON JSON
+
+{
+  "results": [
+    {
+      "id": "https://www.example.com/article1",
+      "url": "https://www.example.com/article1",
+      "title": "The Future of Artificial Intelligence",
+      "publishedDate": "2023-06-15",
+      "author": "Jane Doe",
+      "text": "Artificial Intelligence (AI) has made significant strides in recent years. [... TRUNCATED FOR BREVITY ...]",
+      "highlights": [
+        "AI is revolutionizing industries from healthcare to finance, enabling more efficient processes and data-driven decision making.",
+        "As AI continues to evolve, ethical considerations and responsible development become increasingly important."
+      ],
+      "highlightScores": [
+        0.95,
+        0.92
+      ]
+    },
+    {
+      "id": "https://www.example.com/article2",
+      "url": "https://www.example.com/article2",
+      "title": "Machine Learning Applications in Business",
+      "publishedDate": "2023-06-20",
+      "author": "John Smith",
+      "text": "Machine Learning (ML) is transforming how businesses operate and make decisions. [... TRUNCATED FOR BREVITY ...]",
+      "highlights": [
+        "Machine Learning algorithms can analyze vast amounts of data to identify patterns and make predictions.",
+        "Businesses are leveraging ML for customer segmentation, demand forecasting, and fraud detection."
+      ],
+      "highlightScores": [
+        0.93,
+        0.90
+      ]
+    }
+  ]
+}
+```
+
+<br />
+
+### Return Parameters
+
+<br />
+
+### `SearchResponse`
+
+| Field   | Type                | Description                  |
+| ------- | ------------------- | ---------------------------- |
+| results | SearchResult\<T>\[] | List of SearchResult objects |
+
+<br />
+
+### `SearchResult`
+
+The fields in the `SearchResult<T>` object depend on the options provided in the `getContents` call:
+
+| Field            | Type      | Description                                    |                            |
+| ---------------- | --------- | ---------------------------------------------- | -------------------------- |
+| id               | string    | Temporary ID for the document                  |                            |
+| url              | string    | URL of the search result                       |                            |
+| title            | \`string  | null\`                                         | Title of the search result |
+| publishedDate?   | string    | Estimated creation date                        |                            |
+| author?          | string    | Author of the content, if available            |                            |
+| text?            | string    | Text of the search result page (if requested)  |                            |
+| highlights?      | string\[] | Highlights of the search result (if requested) |                            |
+| highlightScores? | number\[] | Scores of the highlights (if requested)        |                            |
+
+Note: The actual fields present in the `SearchResult<T>` object depend on the options provided in the `getContents` call. If neither `text` nor `highlights` is specified, the method defaults to including the full text content.
+
+<br />
+
+***
+
+## `answer` Method
+
+Generate an answer to a query using Exa's search and LLM capabilities. This returns an AnswerResponse object with the answer text and citations used. You may optionally retrieve the full text of each source by setting `text: true`.
+
+<br />
+
+### Input Example
+
+```TypeScript TypeScript
+// Basic usage
+const answerResponse = await exa.answer("What is the capital of France?");
+console.log(answerResponse);
+
+// If you want the full text of each citation in the result
+const answerWithText = await exa.answer("What is the capital of France?", { text: true });
+console.log(answerWithText);
+```
+
+<br />
+
+### Input Parameters
+
+| Parameter | Type              | Description                                                        | Default  |
+| --------- | ----------------- | ------------------------------------------------------------------ | -------- |
+| query     | string            | The question or query to answer.                                   | Required |
+| options   | \{text?: boolean} | If text is true, each source in the result includes its full text. | {}       |
+
+<br />
+
+### Returns Example
+
+```JSON JSON
+{
+  "answer": "The capital of France is Paris.",
+  "citations": [
+    {
+      "id": "https://www.example.com/france",
+      "url": "https://www.example.com/france",
+      "title": "France - Wikipedia",
+      "publishedDate": "2023-01-01",
+      "author": null,
+      "text": "France, officially the French Republic, is a country in... [truncated for brevity]"
+    }
+  ],
+  "requestId": "abc123"
+}
+```
+
+<br />
+
+### Return Parameters
+
+#### `AnswerResponse`
+
+```TypeScript TypeScript
+interface AnswerResponse {
+  answer: string;
+  citations: SearchResult<{}>[];
+  requestId?: string;
+}
+```
+
+| Field      | Type                   | Description                               |
+| ---------- | ---------------------- | ----------------------------------------- |
+| answer     | string                 | The generated answer text                 |
+| citations  | SearchResult\<\{ }>\[] | The citations used to generate the answer |
+| requestId? | string                 | Optional request ID for reference         |
+
+Each citation is a `SearchResult<{}>` — a basic result object that can include text if options.text was set to true.
+
+<br />
+
+***
+
+## `streamAnswer` Method
+
+Generate a streaming answer to a query with Exa's LLM capabilities. This returns an async generator yielding chunks of text and/or citations as they become available.
+
+<br />
+
+### Input Example
+
+```TypeScript TypeScript
+for await (const chunk of exa.streamAnswer("Explain quantum entanglement in simple terms.", { text: true })) {
+  if (chunk.content) {
+    process.stdout.write(chunk.content); // partial text
+  }
+  if (chunk.citations) {
+    console.log("\nCitations:");
+    console.log(chunk.citations);
+  }
+}
+```
+
+<br />
+
+### Input Parameters
+
+| Parameter | Type                | Description                                                  | Default  |
+| --------- | ------------------- | ------------------------------------------------------------ | -------- |
+| query     | string              | The question to answer.                                      | Required |
+| options   | \{ text?: boolean } | If text is true, each citation chunk includes its full text. | {}       |
+
+<br />
+
+### Return Type
+
+An async generator of objects with the type:
+
+```TypeScript TypeScript
+interface AnswerStreamChunk {
+  content?: string;
+  citations?: Array<{
+    id: string;
+    url: string;
+    title?: string;
+    publishedDate?: string;
+    author?: string;
+    text?: string;
+  }>;
+}
+```
+
+* `content` is the partial text content of the answer so far (streamed in chunks).
+* `citations` is an array of citation objects that appear at this chunk in the response.
+
+You can end iteration by using a break or by letting the loop finish naturally.
+
+<br />
+
+***
+
+## `research.createTask` Method
+
+Create an asynchronous research task that performs multi-step web research and returns structured JSON results with citations.
+
+<br />
+
+### Input Example
+
+```TypeScript TypeScript
+import Exa, { ResearchModel } from "exa-js";
+
+const exa = new Exa(process.env.EXA_API_KEY);
+
+// Simple research task
+const instructions = "What is the latest valuation of SpaceX?";
+const schema = {
+  type: "object",
+  properties: {
+    valuation: { type: "string" },
+    date: { type: "string" },
+    source: { type: "string" }
+  }
+};
+
+const task = await exa.research.createTask({
+  instructions: instructions,
+  output: { schema: schema }
+});
+
+// Or even simpler - let the model infer the schema
+const simpleTask = await exa.research.createTask({
+  instructions: "What are the main benefits of meditation?",
+  output: { inferSchema: true }
+});
+
+console.log(`Task created with ID: ${task.id}`);
+```
+
+<br />
+
+### Input Parameters
+
+| Parameter    | Type                                        | Description                                                                                       | Default       |
+| ------------ | ------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------- |
+| instructions | string                                      | Natural language instructions describing what the research task should accomplish.                | Required      |
+| model        | ResearchModel                               | The research model to use. Options: ResearchModel.exa\_research, ResearchModel.exa\_research\_pro | exa\_research |
+| output       | \{ schema?: object, inferSchema?: boolean } | Output configuration with optional JSON schema or automatic schema inference.                     | undefined     |
+
+<br />
+
+### Returns Example
+
+```JSON JSON
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}
+```
+
+<br />
+
+### Return Type
+
+```TypeScript TypeScript
+interface CreateTaskResponse {
+  id: string;
+}
+```
+
+| Field | Type   | Description                        |
+| ----- | ------ | ---------------------------------- |
+| id    | string | The unique identifier for the task |
+
+<br />
+
+## `research.getTask` Method
+
+Get the current status and results of a research task by its ID.
+
+<br />
+
+### Input Example
+
+```TypeScript TypeScript
+// Get a research task by ID
+const taskId = "your-task-id-here";
+const task = await exa.research.getTask(taskId);
+
+console.log(`Task status: ${task.status}`);
+if (task.status === "completed") {
+  console.log(`Results: ${JSON.stringify(task.data)}`);
+  console.log(`Citations: ${JSON.stringify(task.citations)}`);
+}
+```
+
+<br />
+
+### Input Parameters
+
+| Parameter | Type   | Description                       | Default  |
+| --------- | ------ | --------------------------------- | -------- |
+| id        | string | The unique identifier of the task | Required |
+
+<br />
+
+### Returns Example
+
+```JSON JSON
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "status": "completed",
+  "instructions": "What is the latest valuation of SpaceX?",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "valuation": {"type": "string"},
+      "date": {"type": "string"},
+      "source": {"type": "string"}
+    }
+  },
+  "data": {
+    "valuation": "$350 billion",
+    "date": "December 2024",
+    "source": "Financial Times"
+  },
+  "citations": {
+    "valuation": [
+      {
+        "id": "https://www.ft.com/content/...",
+        "url": "https://www.ft.com/content/...",
+        "title": "SpaceX valued at $350bn in employee share sale",
+        "snippet": "SpaceX has been valued at $350bn..."
+      }
+    ]
+  }
+}
+```
+
+<br />
+
+### Return Type
+
+```TypeScript TypeScript
+interface ResearchTask {
+  id: string;
+  status: "running" | "completed" | "failed";
+  instructions: string;
+  schema?: object;
+  data?: object;
+  citations?: Record<string, Citation[]>;
+}
+
+interface Citation {
+  id: string;
+  url: string;
+  title?: string;
+  snippet: string;
+}
+```
+
+| Field        | Type                                    | Description                                      |
+| ------------ | --------------------------------------- | ------------------------------------------------ |
+| id           | string                                  | The unique identifier for the task               |
+| status       | string                                  | Task status: "running", "completed", or "failed" |
+| instructions | string                                  | The original instructions provided               |
+| schema       | object (optional)                       | The JSON schema specification used               |
+| data         | object (optional)                       | The research results (when completed)            |
+| citations    | Record\<string, Citation\[]> (optional) | Citations grouped by root field (when completed) |
+
+<br />
+
+## `research.pollTask` Method
+
+Poll a research task until it completes or fails, returning the final result.
+
+<br />
+
+### Input Example
+
+```TypeScript TypeScript
+// Create and poll a task until completion
+const task = await exa.research.createTask({
+  instructions: "Get information about Paris, France",
+  output: {
+    schema: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        population: { type: "string" },
+        founded_date: { type: "string" }
+      }
+    }
+  }
+});
+
+// Poll until completion
+const result = await exa.research.pollTask(task.id);
+console.log(`Research complete: ${JSON.stringify(result.data)}`);
+```
+
+<br />
+
+### Input Parameters
+
+| Parameter | Type   | Description                       | Default  |
+| --------- | ------ | --------------------------------- | -------- |
+| id        | string | The unique identifier of the task | Required |
+
+Note: The pollTask method automatically polls every 1 second with a timeout of 10 minutes.
+
+<br />
+
+### Returns
+
+Returns a `ResearchTask` object with the completed task data (same structure as `getTask`).
+
+<br />
+
+## `research.listTasks` Method
+
+List all research tasks with optional pagination.
+
+<br />
+
+### Input Example
+
+```TypeScript TypeScript
+// List all research tasks
+const response = await exa.research.listTasks();
+console.log(`Found ${response.data.length} tasks`);
+
+// List with pagination
+const paginatedResponse = await exa.research.listTasks({ limit: 10 });
+if (paginatedResponse.hasMore) {
+  const nextPage = await exa.research.listTasks({
+    cursor: paginatedResponse.nextCursor
+  });
+}
+```
+
+<br />
+
+### Input Parameters
+
+| Parameter | Type   | Description                             | Default   |
+| --------- | ------ | --------------------------------------- | --------- |
+| cursor    | string | Pagination cursor from previous request | undefined |
+| limit     | number | Number of results to return (1-200)     | 25        |
+
+<br />
+
+### Returns Example
+
+```JSON JSON
+{
+  "data": [
+    {
+      "id": "task-1",
+      "status": "completed",
+      "instructions": "Research SpaceX valuation",
+      ...
+    },
+    {
+      "id": "task-2",
+      "status": "running",
+      "instructions": "Compare GPU specifications",
+      ...
+    }
+  ],
+  "hasMore": true,
+  "nextCursor": "eyJjcmVhdGVkQXQiOiIyMDI0LTAxLTE1VDE4OjMwOjAwWiIsImlkIjoidGFzay0yIn0="
+}
+```
+
+<br />
+
+### Return Type
+
+```TypeScript TypeScript
+interface ListTasksResponse {
+  data: ResearchTask[];
+  hasMore: boolean;
+  nextCursor?: string;
+}
+```
+
+| Field      | Type              | Description                                   |
+| ---------- | ----------------- | --------------------------------------------- |
+| data       | ResearchTask\[]   | List of research task objects                 |
+| hasMore    | boolean           | Whether there are more results to paginate    |
+| nextCursor | string (optional) | Cursor for the next page (if hasMore is true) |
+
+
+# Contents Retrieval
+
+***
+
+When using the Exa API, you can request different types of content to be returned for each search result.
+
+## Text (text=True)
+
+Returns the full text content of the result, formatted as markdown. It extracts the main content (like article body text) while filtering out navigation elements, pop-ups, and other peripheral text. This is extractive content taken directly from the page's source.
+
+## Summary (summary=True)
+
+Provides a concise summary generated from the text, tailored to a specific query you provide. This is abstractive content created by processing the source text using Gemini Flash.
+
+### Structured Summaries
+
+You can also request structured summaries by providing a JSON schema:
+
+```json
+{
+  "summary": {
+    "query": "Provide company information",
+    "schema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Company Information",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The name of the company" },
+        "industry": { "type": "string", "description": "The industry the company operates in" },
+        "foundedYear": { "type": "number", "description": "The year the company was founded" }
+      },
+      "required": ["name", "industry"]
+    }
+  }
+}
+```
+
+The API will return the summary as a JSON string that matches your schema structure, which you can parse to access the structured data.
+
+## Highlights
+
+Delivers key excerpts from the text that are most relevant to your search query, emphasizing important information within the content. This is also extractive content from the source.
+
+You can configure highlights in two ways:
+
+1. **Simple boolean** (`highlights=True`): Returns default highlights based on the search query
+
+2. **Detailed configuration** (pass as an object):
+   ```json
+   {
+     "contents": {
+       "highlights": {
+         "query": "Your specific highlight query",
+         "numSentences": 3,
+         "highlightsPerUrl": 5
+       }
+     }
+   }
+   ```
+   * `query`: The specific query to use for generating highlights (if different from search query)
+   * `numSentences`: Number of sentences per highlight
+   * `highlightsPerUrl`: Maximum number of highlights to return per URL
+
+## Images and favicons
+
+You can get images from webpages by setting `imageLinks` (under `contents.extras.imageLinks`) to specify how many images you want per result. Each result also includes the website's `favicon` URL and a representative `image` URL when available.
+
+## Crawl Errors
+
+The contents endpoint provides detailed status information for each URL through the `statuses` field in the response. The endpoint only returns an error if there's an internal issue on Exa's end - all other cases are reported through individual URL statuses.
+
+Each response includes a `statuses` array with status information for each requested URL:
+
+```json
+{
+  "results": [...],
+  "statuses": [
+    {
+      "id": "https://example.com",
+      "status": "success" | "error",
+      "error": {
+        "tag": "CRAWL_NOT_FOUND" | "CRAWL_TIMEOUT" | "CRAWL_LIVECRAWL_TIMEOUT" | "SOURCE_NOT_AVAILABLE" | "CRAWL_UNKNOWN_ERROR",
+        "httpStatusCode": 404 | 408 | 403 | 500
+      }
+    }
+  ]
+}
+```
+
+The error tags correspond to different failure scenarios:
+
+* `CRAWL_NOT_FOUND`: Content not found (HTTP 404)
+* `CRAWL_TIMEOUT`: The target page returned a timeout error (HTTP 408)
+* `CRAWL_LIVECRAWL_TIMEOUT`: The `livecrawlTimeout` parameter limit was reached during crawling
+* `SOURCE_NOT_AVAILABLE`: Access forbidden or source unavailable (HTTP 403)
+* `CRAWL_UNKNOWN_ERROR`: Other errors (HTTP 500+)
+
+To handle errors, check the `statuses` field for each URL:
+
+```python
+result = exa.get_contents(["https://example.com"])
+for status in result.statuses:
+    if status.status == "error":
+        print(f"Error for {status.id}: {status.error.tag} ({status.error.httpStatusCode})")
+```
+
+This allows you to handle different failure scenarios appropriately for each URL in your request.
+
+
+# Crawling Subpages
+
+***
+
+When searching websites, you often need to explore beyond the main page to find relevant information. Exa's subpage crawling feature allows you to automatically discover and search through linked pages within a website.
+
+## Using Subpage Crawling
+
+Here's how to use Exa's subpage crawling feature:
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST 'https://api.exa.ai/contents' \
+    -H 'x-api-key: YOUR-EXA-API-KEY' \
+    -H 'Content-Type: application/json' \
+    -d '{
+      "ids": ["https://example.com"],
+      "subpages": 5,
+      "subpageTarget": ["about", "products"]
+    }'
+  ```
+
+  ```python Python
+  results = exa.get_contents(
+      ["https://example.com"], 
+      subpages=5, 
+      subpage_target=["about", "products"]
+  )
+  ```
+
+  ```typescript TypeScript
+  const results = await exa.getContents(
+      ["https://example.com"], 
+      {
+          subpages: 5,
+          subpageTarget: ["about", "products"]
+      }
+  );
+  ```
+</CodeGroup>
+
+This will search through up to 5 subpages of the given website, and prioritize pages that contain the keywords "about" or "products" in their contents.
+
+## Parameters
+
+* `subpages`: Maximum number of subpages to crawl (integer)
+* `subpage_target`: List of query keywords to target (e.g., \["about", "products", "news"])
+
+## Best Practices
+
+1. **Limit Depth**: Start with a smaller `subpages` value (5-10) and increase if needed
+2. **Consider Caching**: Use `livecrawl='always'` only when you need the most recent content
+3. **Target Specific Sections**: Use `subpage_target` to focus on relevant sections rather than crawling the entire site
+
+## Combining with LiveCrawl
+
+For the most up-to-date and comprehensive results, combine subpage crawling with livecrawl:
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST 'https://api.exa.ai/contents' \
+    -H 'x-api-key: YOUR-EXA-API-KEY' \
+    -H 'Content-Type: application/json' \
+    -d '{
+      "ids": ["https://www.apple.com/"],
+      "livecrawl": "always",
+      "subpageTarget": ["news", "product"],
+      "subpages": 10
+    }'
+  ```
+
+  ```python Python
+  result = exa.get_contents(
+      ["https://www.apple.com/"],
+      livecrawl="always",
+      subpage_target=["news", "product"],
+      subpages=10
+  )
+  ```
+
+  ```typescript TypeScript
+  const result = await exa.getContents(
+      ["https://www.apple.com/"],
+      {
+          livecrawl: "always",
+          subpageTarget: ["news", "product"],
+          subpages: 10
+      }
+  );
+  ```
+</CodeGroup>
+
+This ensures you get fresh content from all discovered subpages.
+
+Note that regarding usage, additional subpages count as an additional piece of content retrieval for each type you specify.
+
+## Examples
+
+### Product Documentation
+
+Search through documentation pages:
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST 'https://api.exa.ai/contents' \
+    -H 'x-api-key: YOUR-EXA-API-KEY' \
+    -H 'Content-Type: application/json' \
+    -d '{
+      "ids": ["https://exa.ai"],
+      "subpages": 9,
+      "subpageTarget": ["docs", "tutorial"]
+    }'
+  ```
+
+  ```python Python
+  result = exa.get_contents(
+      ["https://exa.ai"],
+      subpages=9,
+      subpage_target=["docs", "tutorial"]
+  )
+  ```
+
+  ```typescript TypeScript
+  const result = await exa.getContents(
+      ["https://exa.ai"],
+      {
+          subpages: 9,
+          subpageTarget: ["docs", "tutorial"]
+      }
+  );
+  ```
+</CodeGroup>
+
+This example crawls up to 9 subpages from the main site, prioritizing pages that contain "docs" or "tutorial" in their content.
+
+```Shell Shell
+{
+  "results": [
+    {
+      "id": "https://exa.ai",
+      "url": "https://exa.ai/",
+      "title": "Exa API",
+      "author": "exa",
+      "text": "AIs need powerful access to knowledge. But search engines haven't improved since 1998...",
+      "image": "https://exa.imgix.net/og-image.png",
+      "subpages": [
+        {
+          "id": "https://docs.exa.ai/reference/getting-started",
+          "url": "https://docs.exa.ai/reference/getting-started",
+          "title": "Getting Started",
+          "author": "",
+          "text": "Exa provides search for AI. Exa is a knowledge API for LLMs..."
+        },
+        {
+          "id": "https://docs.exa.ai/reference/recent-news-summarizer",
+          "url": "https://docs.exa.ai/reference/recent-news-summarizer",
+          "title": "Recent News Summarizer",
+          "author": null,
+          "publishedDate": "2024-03-02T11:36:31.000Z",
+          "text": "In this example, we will build a LLM-based news summarizer app..."
+        },
+        {
+          "id": "https://docs.exa.ai/reference/company-analyst",
+          "url": "https://docs.exa.ai/reference/company-analyst",
+          "title": "Company Analyst",
+          "author": null,
+          "publishedDate": "2024-03-02T11:36:42.000Z",
+          "text": "n this example, we&#39;ll build a company analyst tool that..."
+        },
+        {
+          "id": "https://docs.exa.ai/reference/exa-researcher",
+          "url": "https://docs.exa.ai/reference/exa-researcher",
+          "title": "Exa Researcher",
+          "author": null,
+          "publishedDate": "2024-03-02T11:36:30.000Z",
+          "text": "In this example, we will build Exa Researcher, a Javascript..."
+        },
+        {
+          "id": "https://docs.exa.ai/reference/exa-rag",
+          "url": "https://docs.exa.ai/reference/exa-rag",
+          "title": "Exa RAG",
+          "author": null,
+          "publishedDate": "2024-03-02T11:36:43.000Z",
+          "text": "LLMs are powerful because they compress large amounts of data..."
+        },
+        {
+          "id": "https://docs.exa.ai/",
+          "url": "https://docs.exa.ai/",
+          "title": "Introduction",
+          "author": "",
+          "publishedDate": "2023-03-03T23:47:48.000Z",
+          "text": "Exa is a search engine made for AIs.  \n Exa has three core..."
+        },
+        {
+          "id": "https://exa.ai/blog/announcing-exa",
+          "url": "https://exa.ai/blog/announcing-exa",
+          "title": "Exa API",
+          "author": "exa",
+          "text": "Steps toward the mission Today, we're excited to announce...",
+          "image": "https://exa.imgix.net/og-image.png"
+        },
+        {
+          "id": "https://dashboard.exa.ai/",
+          "url": "https://dashboard.exa.ai/",
+          "title": "Exa API Dashboard",
+          "author": "Exa",
+          "publishedDate": "2012-01-06T00:00:00.000Z",
+          "text": "Get started with Exa No credit card required. If you are..."
+        }
+      ]
+    }
+  ]
+}
+```
+
+### News Archives
+
+Crawl through a company's news section:
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST 'https://api.exa.ai/contents' \
+    -H 'x-api-key: YOUR-EXA-API-KEY' \
+    -H 'Content-Type: application/json' \
+    -d '{
+      "ids": ["https://www.apple.com/"],
+      "livecrawl": "always",
+      "subpageTarget": ["news", "product"],
+      "subpages": 10
+    }'
+  ```
+
+  ```python Python
+  result = exa.get_contents(
+      ["https://www.apple.com/"],
+      livecrawl="always",
+      subpage_target=["news", "product"],
+      subpages=10
+  )
+  ```
+
+  ```typescript TypeScript
+  const result = await exa.getContents(
+      ["https://www.apple.com/"],
+      {
+          livecrawl: "always",
+          subpageTarget: ["news", "product"],
+          subpages: 10
+      }
+  );
+  ```
+</CodeGroup>
+
+Output:
+
+```Shell Shell
+{
+  "results": [
+    {
+      "id": "https://www.apple.com/",
+      "url": "https://www.apple.com/",
+      "title": "Apple",
+      "author": "",
+      "publishedDate": "2024-10-30T16:54:13.000Z",
+      "text": "Apple Intelligence is here.\nExperience it now on the latest iPhone...",
+      "image": "https://www.apple.com/ac/structured-data/images/open_graph_logo.png?202110180743",
+      "subpages": [
+        {
+          "id": "https://www.apple.com/apple-news/",
+          "url": "https://www.apple.com/apple-news/",
+          "title": "Apple News+",
+          "author": "",
+          "publishedDate": "2024-05-07T20:24:00.000Z",
+          "text": "Get 3 months of Apple News+ free with a new iPhone, iPad, or...",
+          "image": "https://www.apple.com/v/apple-news/l/images/shared/apple-news__6xg2yiktruqy_og.png?202401091100"
+        },
+        {
+          "id": "https://www.apple.com/us/shop/goto/store",
+          "url": "https://www.apple.com/us/shop/goto/store",
+          "title": "Apple Store Online",
+          "author": "",
+          "publishedDate": "2024-06-18T09:56:09.000Z",
+          "text": "Apple Intelligence is available in beta on all iPhone 16 models...",
+          "image": "https://as-images.apple.com/is/og-default?wid=1200&hei=630&fmt=jpeg&qlt=95&.v=1525370171638"
+        },
+        {
+          "id": "https://www.apple.com/mac/",
+          "url": "https://www.apple.com/mac/",
+          "title": "Mac",
+          "author": "",
+          "publishedDate": "2024-05-07T20:24:00.000Z",
+          "text": "Answer calls or messages from your iPhone directly on your Mac...",
+          "image": "https://www.apple.com/v/mac/home/cb/images/meta/mac__c3zv0c86zu0y_og.png?202410291046"
+        },
+        {
+          "id": "https://www.apple.com/ipad/",
+          "url": "https://www.apple.com/ipad/",
+          "title": "iPad",
+          "author": "",
+          "publishedDate": "2024-05-07T20:24:00.000Z",
+          "text": "Get 3% Daily Cash back with Apple Card. And pay for your new iPad...",
+          "image": "https://www.apple.com/v/ipad/home/cm/images/meta/ipad__f350v51yy3am_og.png?202410241440"
+        },
+        {
+          "id": "https://www.apple.com/iphone/",
+          "url": "https://www.apple.com/iphone/",
+          "title": "iPhone",
+          "author": "",
+          "publishedDate": "2024-05-07T20:24:00.000Z",
+          "text": "Get credit toward iPhone 16 or iPhone 16 Pro when you trade...",
+          "image": "https://www.apple.com/v/iphone/home/bx/images/meta/iphone__kqge21l9n26q_og.png?202410241440"
+        },
+        {
+          "id": "https://www.apple.com/watch/",
+          "url": "https://www.apple.com/watch/",
+          "title": "Apple Watch",
+          "author": "",
+          "publishedDate": "2024-05-07T20:24:00.000Z",
+          "text": "Combining Apple Watch and iPhone opens up a world of features...",
+          "image": "https://www.apple.com/v/watch/bo/images/meta/apple-watch__f6h72tjlgx26_og.png?202410031527"
+        },
+        {
+          "id": "https://www.apple.com/apple-vision-pro/",
+          "url": "https://www.apple.com/apple-vision-pro/",
+          "title": "Apple Vision Pro",
+          "author": "",
+          "publishedDate": "2024-05-07T20:24:00.000Z",
+          "text": "Apple Vision Pro seamlessly blends digital content with your...",
+          "image": "https://www.apple.com/v/apple-vision-pro/e/images/meta/apple-vision-pro-us__f28gp8ey4vam_og.png?202409261242"
+        },
+        {
+          "id": "https://www.apple.com/airpods/",
+          "url": "https://www.apple.com/airpods/",
+          "title": "AirPods",
+          "author": "",
+          "publishedDate": "2024-09-27T17:22:17.000Z",
+          "text": "AirPods Pro 2 now feature a scientifically validated Hearing...",
+          "image": "https://www.apple.com/v/airpods/x/images/meta/airpods__dh7xkbort402_og.png?202410241631"
+        },
+        {
+          "id": "https://www.apple.com/tv-home/",
+          "url": "https://www.apple.com/tv-home/",
+          "title": "TV & Home",
+          "author": "",
+          "publishedDate": "2024-05-07T20:24:00.000Z",
+          "text": "The future hits home.\nSimply connect your favorite devices...",
+          "image": "https://www.apple.com/v/tv-home/n/images/meta/tv-home__fedwm0ly3mqi_og.png?202409151638"
+        }
+      ]
+    }
+  ],
+  "requestId": "17e8a79ff11bcb73115ef3efcb8e0457"
+}
+```
+
+### Blog Content
+
+Gather recent blog posts:
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST 'https://api.exa.ai/contents' \
+    -H 'x-api-key: YOUR-EXA-API-KEY' \
+    -H 'Content-Type: application/json' \
+    -d '{
+      "ids": ["https://medium.com"],
+      "subpages": 5,
+      "subpageTarget": ["blog", "articles"],
+      "livecrawl": "always"
+    }'
+  ```
+
+  ```python Python
+  results = exa.get_contents(
+      ["https://medium.com"],
+      subpages=5,
+      subpage_target=["blog", "articles"],
+      livecrawl='always'
+  )
+  ```
+
+  ```typescript TypeScript
+  const results = await exa.getContents(
+      ["https://medium.com"],
+      {
+          subpages: 5,
+          subpageTarget: ["blog", "articles"],
+          livecrawl: "always"
+      }
+  );
+  ```
+</CodeGroup>
+
+Output:
+
+```Shell Shell
+{
+	"results": [
+		{
+			"id": "https://medium.com",
+			"title": "Medium: Read and write stories.",
+			"url": "https://medium.com",
+			"publishedDate": "2025-08-12T20:25:00.000Z",
+			"author": "",
+			"text": "[Sitemap](https://medium.com/sitemap/sitemap.xml)\n\n[Medium Logo](https://medium.com/)...",
+			"image": "https://miro.medium.com/v2/da:true/167cff2a3d17ac1e64d0762539978f2d54c0058886e8b3c8a03a725a83012ec0",
+			"favicon": "https://miro.medium.com/v2/5d8de952517e8160e40ef9841c781cdc14a5db313057fa3c3de41c6f5b494b19",
+			"subpages": [
+				{
+					"id": "https://blog.medium.com",
+					"title": "The Medium Blog",
+					"url": "https://blog.medium.com",
+					"publishedDate": "2025-08-12T20:25:00.000Z",
+					"author": "",
+					"text": "[Sitemap](https://blog.medium.com/sitemap/sitemap.xml)...",
+					"image": "https://miro.medium.com/v2/resize:fit:1024/1*7eq6Xl7nRYU77U7IPYvoDg.jpeg",
+					"favicon": "https://miro.medium.com/v2/5d8de952517e8160e40ef9841c781cdc14a5db313057fa3c3de41c6f5b494b19"
+				},
+				{
+					"id": "https://medium.com/",
+					"title": "Medium: Read and write stories.",
+					"url": "https://medium.com/",
+					"publishedDate": "2025-08-12T20:25:00.000Z",
+					"author": "",
+					"text": "[Sitemap](https://medium.com/sitemap/sitemap.xml)...",
+					"image": "https://miro.medium.com/v2/da:true/167cff2a3d17ac1e64d0762539978f2d54c0058886e8b3c8a03a725a83012ec0",
+					"favicon": "https://miro.medium.com/v2/5d8de952517e8160e40ef9841c781cdc14a5db313057fa3c3de41c6f5b494b19"
+				},
+				{
+					"id": "https://medium.com/about?autoplay=1",
+					"title": "About Medium",
+					"url": "https://medium.com/about?autoplay=1",
+					"publishedDate": "2025-08-12T20:25:00.000Z",
+					"author": "",
+					"text": "[Sitemap](https://medium.com/sitemap/sitemap.xml)...",
+					"image": "https://miro.medium.com/v2/da:true/167cff2a3d17ac1e64d0762539978f2d54c0058886e8b3c8a03a725a83012ec0",
+					"favicon": "https://miro.medium.com/v2/5d8de952517e8160e40ef9841c781cdc14a5db313057fa3c3de41c6f5b494b19"
+				},
+				{
+					"id": "https://medium.com/membership",
+					"title": "Medium Membership",
+					"url": "https://medium.com/membership",
+					"publishedDate": "2025-08-12T20:25:00.000Z",
+					"author": "",
+					"text": "[Sitemap](https://medium.com/sitemap/sitemap.xml)...",
+					"image": "https://miro.medium.com/v2/da:true/167cff2a3d17ac1e64d0762539978f2d54c0058886e8b3c8a03a725a83012ec0",
+					"favicon": "https://miro.medium.com/v2/5d8de952517e8160e40ef9841c781cdc14a5db313057fa3c3de41c6f5b494b19"
+				}
+			]
+		}
+	],
+  "requestId": "20163fc78142a5ff69c6959167417f1f"
+}
+```
+# Livecrawling Contents
+
+***
+
+With Exa, we can already search the web using LLMs.
+
+However, by default, we cache all of our links to bias for the fastest response possible. You may be interested in the live version of the page, which our `livecrawl` parameter can help with.
+
+## LiveCrawl Options
+
+Here are all livecrawl options and their behaviors:
+
+| Option        | Crawl Behavior   | Cache Fallback              | Best For                                               |
+| ------------- | ---------------- | --------------------------- | ------------------------------------------------------ |
+| `"always"`    | Always crawls    | Never falls back            | Real-time data (news, stock prices, live events)       |
+| `"preferred"` | Always crawls    | Falls back on crawl failure | Production apps needing fresh content with reliability |
+| `"fallback"`  | Only if no cache | Uses cache first            | Balanced speed and freshness                           |
+| `"never"`     | Never crawls     | Always uses cache           | Maximum speed, historical/static content               |
+
+## When LiveCrawl Isn't Necessary
+
+Cached data is sufficient for many queries, especially for historical topics like "What were the major causes of World War II?" or educational content such as "How does photosynthesis work?" These subjects rarely change, so reliable cached results can provide accurate information quickly.
+
+## Examples
+
+### Company News
+
+Using `"always"` ensures you get the freshest content. If you're tracking Apple's latest releases, you'll want a live view of their homepage:
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST 'https://api.exa.ai/contents' \
+    -H 'x-api-key: YOUR-EXA-API-KEY' \
+    -H 'Content-Type: application/json' \
+    -d '{
+      "ids": ["https://www.apple.com"],
+      "livecrawl": "always"
+    }'
+  ```
+
+  ```python Python
+  result = exa.get_contents(
+      ["https://www.apple.com"],
+      livecrawl="always"
+  )
+  ```
+
+  ```typescript TypeScript
+  const result = await exa.getContents(
+      ["https://www.apple.com"],
+      {
+          livecrawl: "always"
+      }
+  );
+  ```
+</CodeGroup>
+
+Output without LiveCrawl: Results here are slightly dated, mentioning a fall release (later in the year)
+
+```Shell Shell
+{
+  "results": [
+    {
+      "id": "https://www.apple.com",
+      "url": "https://www.apple.com/",
+      "title": "Apple",
+      "author": "",
+      "text": "Apple Footer\n 1. Apple Intelligence will be available in beta on iPhone 15 Pro, iPhone 15 Pro Max, and iPad and Mac with M1 and later, with Siri and device language set to U.S. English, as part of iOS 18, iPadOS 18, and macOS Sequoia this fall.\n 2. Trade-in values will vary based on the condition, year, and configuration of your eligible trade-in device. Not all devices are eligible for credit. You must be at least 18 years old to be eligible to trade in for credit or for an Apple Gift Card. Trade-in value may be applied toward qualifying new device purchase, or added to an Apple Gift Card. Actual value awarded is based on receipt of a qualifying device matching the description provided when estimate was made. Sales tax may be assessed on full value of a new device purchase. In-store trade-in requires presentation of a valid photo ID (local law may require saving this information). Offer may not be available in all stores, and may vary between in-store and online trade-in. Some stores may have additional requirements. Apple or its trade-in partners reserve the right to refuse or limit quantity of any trade-in transaction for any reason. More details are available from Apple's trade-in partner for trade-in and recycling of eligible devices. Restrictions and limitations may apply. \nA subscription is required for Apple TV+.\nAvailable in the U.S. on apple.com, in the Apple Store app, and at Apple Stores.\nTo access and use all Apple Card features and products available only to Apple Card users, you must add Apple Card to Wallet on an iPhone or iPad that supports and has the latest version of iOS or iPadOS. Apple Card is subject to credit approval, available only for qualifying applicants in the United States, and issued by Goldman Sachs Bank USA, Salt Lake City Branch. \nIf you reside in the U.S. territories, please call Goldman Sachs at 877-255-5923 with questions about Apple Card.\nLearn more about how Apple Card applications are evaluated at support.apple.com/kb/HT209218.\n A subscription is required for Apple TV+. \n Major League Baseball trademarks and copyrights are used with permission of MLB Advanced Media, L.P. All rights reserved. \n A subscription is required for Apple Arcade, Apple Fitness+, and Apple Music. \nApple Store\n Find a Store \n Genius Bar \n Today at Apple \n Group Reservations \n Apple Camp \n Apple Store App \n Certified Refurbished \n Apple Trade In \n Financing \n Carrier Deals at Apple \n Order Status \n Shopping Help",
+      "image": "https://www.apple.com/ac/structured-data/images/open_graph_logo.png?202110180743"
+    }
+  ],
+  "requestId": "f60d0828916fb43401ed90cd3c11dd59"
+}
+```
+
+Output with LiveCrawl (as at Oct 30 2024): Now we see contents talking about Apple's upcoming specific release on November 11th
+
+```Shell Shell
+{
+  "results": [
+    {
+      "id": "https://www.apple.com",
+      "url": "https://www.apple.com",
+      "title": "Apple",
+      "author": "",
+      "publishedDate": "2024-10-30T16:34:14.000Z",
+      "text": "Apple Intelligence is here.\nExperience it now on the latest iPhone, iPad, and Mac models with a free software update.1 \nMacBook Pro\nA work of smart.\nAvailable starting 11.8\n Hello, Apple Intelligence. \nApple Intelligence is here.\nExperience it now on the latest iPhone, iPad, and Mac models with a free software update.1 \nMac mini\nSize down. Power up.\nAvailable starting 11.8\n Hello, Apple Intelligence. \nApple Intelligence is here.\nExperience it now on the latest iPhone, iPad, and Mac models with a free software update.1 \niMac\nBril l l l l liant.\nAvailable starting 11.8\n Hello, Apple Intelligence. \niPhone 16 Pro\nHello, Apple Intelligence.\niPhone 16\nHello, Apple Intelligence.\nAirPods Pro 2\nHearing Test, Hearing Aid, and Hearing Protection features in a free software update.2\n Apple Intelligence \nAI for the rest of us.\n Apple Trade In \nGet $180-$650 in credit when you trade in iPhone 12 or higher.3 \n Apple Card \nGet up to 3% Daily Cash back with every purchase.\nApple TV+\nFAM Gallery",
+      "image": "https://www.apple.com/ac/structured-data/images/open_graph_logo.png?202110180743"
+    }
+  ],
+  "requestId": "fdb7df2ef400b5994b0c5a855875cdce"
+}
+```
+
+### Production Applications
+
+Using `"preferred"` provides fresh content with fallback reliability. This is ideal for production applications:
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST 'https://api.exa.ai/contents' \
+    -H 'x-api-key: YOUR-EXA-API-KEY' \
+    -H 'Content-Type: application/json' \
+    -d '{
+      "ids": ["https://www.apple.com"],
+      "livecrawl": "preferred"
+    }'
+  ```
+
+  ```python Python
+  result = exa.get_contents(
+      ["https://www.apple.com"],
+      livecrawl="preferred"
+  )
+  ```
+
+  ```typescript TypeScript
+  const result = await exa.getContents(
+      ["https://www.apple.com"],
+      {
+          livecrawl: "preferred"
+      }
+  );
+  ```
+</CodeGroup>
+
+This will try to get the freshest content available, but if live crawling fails (due to website downtime, network issues, etc.), it falls back to cached content instead of failing entirely. This makes it ideal for production applications.
+
+# Exa Research
+
+> Automate in-depth web research with structured output support.
+
+## How It Works
+
+The Research API is an **asynchronous, multi-step pipeline** that transforms open-ended questions into grounded reports. You provide natural-language instructions (e.g. *"Compare the hardware roadmaps of the top GPU manufacturers"*) and an optional JSON Schema describing the output you want.
+
+Under the hood, Exa agents perform multiple steps:
+
+1. **Planning** – Your natural-language `instructions` are parsed by an LLM that decomposes the task into one or more research steps.
+
+2. **Searching** – Specialized search agents issue semantic and keyword queries to Exa's search engine, continuously expanding and refining the result set until they can fulfil the request.
+
+3. **Reasoning & synthesis** – Reasoning models combine facts across sources and return structured JSON (if you provide `outputSchema`) or a detailed markdown report.
+
+Because tasks are **asynchronous**, you submit a request and immediately receive a `researchId`. You can [poll the request](/reference/research/get-a-task) until it is complete or failed, or [list all tasks](/reference/research/list-tasks) to monitor progress in bulk.
+
+## Best Practices
+
+* **Be explicit** – Clear, scoped instructions lead to faster tasks and higher-quality answers. You should describe (1) what information you want (2) how the agent should find that information and (3) how the agent should compose it's final report.
+* **Keep schemas small** – 1-5 root fields is the sweet spot. If you need more, create multiple tasks.
+* **Use enums** – Tight schema constraints improve accuracy and reduce hallucinations.
+
+## Models
+
+The Research API offers two advanced agentic researcher models that break down your instructions, search the web, extract and reason over facts, and return structured answers with citations.
+
+* **exa-research** (default) adapts to the difficulty of the task, using more or less compute for individual steps. Recommended for most use cases.
+* **exa-research-pro** maximizes quality by using the highest reasoning capability for every step. Recommended for the most complex, multi-step research tasks.
+
+Here are typical completion times for each model:
+
+| Model            | p50 (seconds) | p90 (seconds) |
+| ---------------- | ------------- | ------------- |
+| exa-research     | 45            | 90            |
+| exa-research-pro | 90            | 180           |
+
+## Pricing
+
+The Research API now uses **variable usage-based pricing**. You are billed based on how much work and reasoning the research agent does.
+
+<Note>You are ONLY charged for tasks that complete successfully.</Note>
+
+| Operation            | exa-research      | exa-research-pro   | Notes                                                |
+| -------------------- | ----------------- | ------------------ | ---------------------------------------------------- |
+| **Search**           | \$5/1k searches   | \$5/1k searches    | Each unique search query issued by the agent         |
+| **Page read**        | \$5/1k pages read | \$10/1k pages read | One "page" = 1,000 tokens from the web               |
+| **Reasoning tokens** | \$5/1M tokens     | \$5/1M tokens      | Specific LLM tokens used for reasoning and synthesis |
+
+**Example:**\
+A research task with `exa-research` that performs 6 searches, reads 20 pages of content, and uses 1,000 reasoning tokens would cost:
+
+$$
+\begin{array}{rl}
+& \$0.03 \text{ (6 searches × \$5/1000)} \\
++ & \$0.10 \text{ (20 pages × \$5/1000)} \\
++ & \$0.005 \text{ (1{,}000 reasoning tokens × \$5/1{,}000{,}000)} \\
+\hline
+& \$0.135
+\end{array}
+$$
+
+For `exa-research-pro`, the same task would cost:
+
+$$
+\begin{array}{rl}
+& \$0.03 \text{ (6 searches × \$5/1000)} \\
++ & \$0.20 \text{ (20 pages × \$10/1000)} \\
++ & \$0.005 \text{ (1{,}000 reasoning tokens × \$5/1{,}000{,}000)} \\
+\hline
+& \$0.235
+\end{array}
+$$
+
+## Examples
+
+### Competitive Landscape Table
+
+Compare the current flagship GPUs from NVIDIA, AMD, and Intel and extract pricing, TDP, and release date.
+
+<CodeGroup>
+  ```python Python
+  import os
+  from exa_py import Exa
+
+  exa = Exa(os.environ["EXA_API_KEY"])
+
+  instructions = "Compare the current flagship GPUs from NVIDIA, AMD and Intel. Return a table of model name, MSRP USD, TDP watts, and launch date. Include citations for each cell."
+  schema = {
+      "type": "object",
+      "required": ["gpus"],
+      "properties": {
+          "gpus": {
+              "type": "array",
+              "items": {
+                  "type": "object",
+                  "required": ["manufacturer", "model", "msrpUsd", "tdpWatts", "launchDate"],
+                  "properties": {
+                      "manufacturer": {"type": "string"},
+                      "model": {"type": "string"},
+                      "msrpUsd": {"type": "number"},
+                      "tdpWatts": {"type": "integer"},
+                      "launchDate": {"type": "string"}
+                  }
+              }
+          }
+      },
+      "additionalProperties": False
+  }
+
+  research = exa.research.create(
+      model="exa-research",
+      instructions=instructions,
+      output_schema=schema
+  )
+
+  # Poll until completion
+  result = exa.research.poll_until_finished(research.researchId)
+  print(result)
+  ```
+
+  ```javascript JavaScript
+  import Exa, { ResearchModel } from "exa-js";
+
+  const exa = new Exa(process.env.EXA_API_KEY);
+
+  async function compareGPUs() {
+    const research = await exa.research.create({
+      model: ResearchModel.exa_research,
+      instructions:
+        "Compare the current flagship GPUs from NVIDIA, AMD and Intel. Return a table of model name, MSRP USD, TDP watts, and launch date. Include citations for each cell.",
+      outputSchema: {
+        type: "object",
+        required: ["gpus"],
+        properties: {
+          gpus: {
+            type: "array",
+            items: {
+              type: "object",
+              required: [
+                "manufacturer",
+                "model",
+                "msrpUsd",
+                "tdpWatts",
+                "launchDate",
+              ],
+              properties: {
+                manufacturer: { type: "string" },
+                model: { type: "string" },
+                msrpUsd: { type: "number" },
+                tdpWatts: { type: "integer" },
+                launchDate: { type: "string" },
+              },
+            },
+          },
+        },
+        additionalProperties: false,
+      },
+    });
+
+    // Poll until completion
+    const result = await exa.research.pollUntilFinished(research.researchId);
+    console.log("Research result:", result);
+  }
+
+  compareGPUs();
+  ```
+
+  ```bash Curl
+  curl -X POST https://api.exa.ai/research/v1 \
+    -H "x-api-key: $EXA_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "instructions": "Compare the current flagship GPUs from NVIDIA, AMD and Intel. Return a table of model name, MSRP USD, TDP watts, and launch date. Include citations for each cell.",
+      "outputSchema": {
+        "type": "object",
+        "required": ["gpus"],
+        "properties": {
+          "gpus": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["manufacturer", "model", "msrpUsd", "tdpWatts", "launchDate"],
+              "properties": {
+                "manufacturer": {"type": "string"},
+                "model": {"type": "string"},
+                "msrpUsd": {"type": "number"},
+                "tdpWatts": {"type": "integer"},
+                "launchDate": {"type": "string"}
+              }
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }'
+  ```
+</CodeGroup>
+
+### Market Size Estimate
+
+Estimate the total global market size (USD) for battery recycling in 2030 with a clear methodology.
+
+<CodeGroup>
+  ```python Python
+  import os
+  from exa_py import Exa
+
+  exa = Exa(os.environ["EXA_API_KEY"])
+
+  instructions = "Estimate the global market size for battery recycling in 2030. Provide reasoning steps and cite sources."
+  schema = {
+      "type": "object",
+      "required": ["estimateUsd", "methodology"],
+      "properties": {
+          "estimateUsd": {"type": "number"},
+          "methodology": {"type": "string"}
+      },
+      "additionalProperties": False
+  }
+
+  research = exa.research.create(
+      model="exa-research",
+      instructions=instructions,
+      output_schema=schema
+  )
+
+  # Poll until completion
+  result = exa.research.poll_until_finished(research.researchId)
+  print(result)
+  ```
+
+  ```javascript JavaScript
+  import Exa, { ResearchModel } from "exa-js";
+
+  const exa = new Exa(process.env.EXA_API_KEY);
+
+  async function estimateMarketSize() {
+    const research = await exa.research.create({
+      model: ResearchModel.exa_research,
+      instructions:
+        "Estimate the global market size for battery recycling in 2030. Provide reasoning steps and cite sources.",
+      outputSchema: {
+        type: "object",
+        required: ["estimateUsd", "methodology"],
+        properties: {
+          estimateUsd: { type: "number" },
+          methodology: { type: "string" },
+        },
+        additionalProperties: false,
+      },
+    });
+
+    // Poll until completion
+    const result = await exa.research.pollUntilFinished(research.researchId);
+    console.log("Research result:", result);
+  }
+
+  estimateMarketSize();
+  ```
+
+  ```bash Curl
+  curl -X POST https://api.exa.ai/research/v1 \
+    -H "x-api-key: $EXA_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "instructions": "Estimate the global market size for battery recycling in 2030. Provide reasoning steps and cite sources.",
+      "outputSchema": {
+        "type": "object",
+        "required": ["estimateUsd", "methodology"],
+        "properties": {
+          "estimateUsd": {"type": "number"},
+          "methodology": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    }'
+  ```
+</CodeGroup>
+
+### Timeline of Key Events
+
+Build a timeline of major OpenAI product releases from 2015 – 2023.
+
+<CodeGroup>
+  ```python Python
+  import os
+  from exa_py import Exa
+
+  exa = Exa(os.environ["EXA_API_KEY"])
+
+  instructions = "Create a chronological timeline (year, month, brief description) of major OpenAI product releases from 2015 to 2023."
+  schema = {
+      "type": "object",
+      "required": ["events"],
+      "properties": {
+          "events": {
+              "type": "array",
+              "items": {
+                  "type": "object",
+                  "required": ["date", "description"],
+                  "properties": {
+                      "date": {"type": "string"},
+                      "description": {"type": "string"}
+                  }
+              }
+          }
+      },
+      "additionalProperties": False
+  }
+
+  research = exa.research.create(
+      model="exa-research",
+      instructions=instructions,
+      output_schema=schema
+  )
+
+  # Poll until completion
+  result = exa.research.poll_until_finished(research.researchId)
+  print(result)
+  ```
+
+  ```javascript JavaScript
+  import Exa, { ResearchModel } from "exa-js";
+
+  const exa = new Exa(process.env.EXA_API_KEY);
+
+  async function createTimeline() {
+    const research = await exa.research.create({
+      model: ResearchModel.exa_research,
+      instructions:
+        "Create a chronological timeline (year, month, brief description) of major OpenAI product releases from 2015 to 2023.",
+      outputSchema: {
+        type: "object",
+        required: ["events"],
+        properties: {
+          events: {
+            type: "array",
+            items: {
+              type: "object",
+              required: ["date", "description"],
+              properties: {
+                date: { type: "string" },
+                description: { type: "string" },
+              },
+            },
+          },
+        },
+        additionalProperties: false,
+      },
+    });
+
+    // Poll until completion
+    const result = await exa.research.pollUntilFinished(research.researchId);
+    console.log("Research result:", result);
+  }
+
+  createTimeline();
+  ```
+
+  ```bash Curl
+  curl -X POST https://api.exa.ai/research/v1 \
+    -H "x-api-key: $EXA_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "instructions": "Create a chronological timeline (year, month, brief description) of major OpenAI product releases from 2015 to 2023.",
+      "outputSchema": {
+        "type": "object",
+        "required": ["events"],
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["date", "description"],
+              "properties": {
+                "date": {"type": "string"},
+                "description": {"type": "string"}
+              }
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }'
+  ```
+</CodeGroup>
+
+## FAQs
+
+<AccordionGroup>
+  <Accordion title="Who is the Research API for?">
+    Product teams, analysts, researchers, and anyone who needs **structured answers** that require reading multiple web sources — without having to build their own search + scraping + LLM pipeline.
+  </Accordion>
+
+  <Accordion title="How is this different from the /answer endpoint?">
+    `/answer` is designed for **single-shot Q\&A**. The Research API handles
+    **long-running, multi-step investigations**. It's suitable for tasks that
+    require complex reasoning over web data.
+  </Accordion>
+
+  <Accordion title="How long do tasks take?">
+    Tasks generally complete in 20–40 seconds. Simple tasks that can be solved
+    with few searches complete faster, while complex schema's targeting niche
+    subjects may take longer.
+  </Accordion>
+
+  <Accordion title="What are best practices for writing instructions?">
+    Be explicit about the objective and any constraints - Specify the **time
+    range** or **types of sources** to consult if important - Use imperative verbs
+    ("Compare", "List", "Summarize") - Keep it under 4096 characters
+  </Accordion>
+
+  <Accordion title="How large can my output schema be?">
+    You must have ≤ 8 root fields. It must not be more than 5 fields deep.
+  </Accordion>
+
+  <Accordion title="What happens if my schema validation fails?">
+    If your schema is not valid, an error will surface *before the task is
+    created* with a message about what is invalid. You will not be charged for
+    such requests.
+  </Accordion>
+</AccordionGroup>
+
+
+
+# The Exa Index
+
+> We spend a lot of time and energy creating a high quality, curated index.
+
+***
+
+There are many types of content, and we're constantly discovering new things to search for as well. If there's anything you want to be more highly covered, just reach out to [hello@exa.ai](mailto:hello@exa.ai). See the following table for a high level overview of what is available in our index:
+
+|                      Category                     | Availability in Exa Index |                                                           Description                                                           |                                                                                                                                                                                                                                     Example prompt link                                                                                                                                                                                                                                    |
+| :-----------------------------------------------: | :-----------------------: | :-----------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|                  Research papers                  |         Very High         | Offer semantic search over a very vast index of papers, enabling sophisticated, multi-layer and complex filtering for use cases |            [If you're looking for the most helpful academic paper on "embeddings for document retrieval", check this out (pdf:](https://search.exa.ai/search?q=If+you%27re+looking+for+the+most+helpful+academic+paper+on+%22embeddings+for+document+retrieval%22\&filters=%7B%22numResults%22%3A30%2C%22domainFilterType%22%3A%22include%22%2C%22type%22%3A%22neural%22%2C%22resolvedSearchType%22%3A%22neural%22%2C%22useAutoprompt%22%3Afalse%7D\&resolvedSearchType=neural)            |
+|                   Personal pages                  |         Very High         |           Excels at finding personal pages, which are often extremely hard/impossible to find on services like Google           |                                                                           [Here is a link to the best life coach for when you're unhappy at work:](https://exa.ai/search?q=Here%20is%20a%20link%20to%20the%20best%20life%20coach%20for%20when%20you%27re%20unhappy%20at%20work%3A\&c=personal%20site\&filters=%7B%22numResults%22%3A30%2C%22useAutoprompt%22%3Afalse%2C%22domainFilterType%22%3A%22include%22%7D)                                                                          |
+|                     Wikipedia                     |         Very High         |             Covers all of Wikipedia, providing comprehensive access to this vast knowledge base via semantic search             |                                                                      [Here is a Wikipedia page about a Roman emperor:](https://search.exa.ai/search?q=Here+is+a+Wikipedia+page+about+a+Roman+emperor%3A\&filters=%7B%22numResults%22%3A30%2C%22domainFilterType%22%3A%22include%22%2C%22type%22%3A%22neural%22%2C%22useAutoprompt%22%3Afalse%2C%22resolvedSearchType%22%3A%22neural%22%7D\&resolvedSearchType=neurall)                                                                     |
+|                        News                       |         Very High         |                     Includes a wide, robust index of web news sources, providing coverage of current events                     |                                       [Here is news about war in the Middle East:](https://exa.ai/search?q=Here+is+news+about+war+in+the+Middle+East%3A\&c=personal+site\&filters=%7B%22numResults%22%3A30%2C%22domainFilterType%22%3A%22include%22%2C%22type%22%3A%22auto%22%2C%22useAutoprompt%22%3Afalse%2C%22resolvedSearchType%22%3A%22neural%22%2C%22startPublishedDate%22%3A%222024-10-29T01%3A45%3A46.055Z%22%7D\&resolvedSearchType=keyword)                                      |
+|                 LinkedIn  profiles                |    *Very High (US+EU)*    |      Will provide extensive coverage of LinkedIn personal profiles, allowing for detailed professional information searches     |                         b[est theoretical computer scientist at uc berkeley](https://exa.ai/search?q=best+theoretical+computer+scientist+at+uc+berkeley\&c=linkedin+profile\&filters=%7B%22numResults%22%3A30%2C%22domainFilterType%22%3A%22include%22%2C%22type%22%3A%22neural%22%2C%22useAutoprompt%22%3Atrue%2C%22resolvedSearchType%22%3A%22neural%22%7D\&autopromptString=A+leading+theoretical+computer+scientist+at+UC+Berkeley.\&resolvedSearchType=neural)                        |
+|               LinkedIn company pages              |       *Coming Soon*       |       Will offer comprehensive access to LinkedIn company pages, enabling in-depth research on businesses and organization      |                                                                                                                                                                                                                                 (Best-practice example TBC)                                                                                                                                                                                                                                |
+|                 Company home-pages                |         Very High         |        Wide index of companies covered; also available are curated, customized company datasets - reach out to learn more       |                                            [Here is the homepage of a company working on making space travel cheaper:](https://search.exa.ai/search?q=Here+is+the+homepage+of+a+company+working+on+making+space+travel+cheaper%3A\&filters=%7B%22numResults%22%3A30%2C%22domainFilterType%22%3A%22include%22%2C%22type%22%3A%22neural%22%2C%22useAutoprompt%22%3Afalse%2C%22resolvedSearchType%22%3A%22neural%22%7D\&resolvedSearchType=neural)                                            |
+|                 Financial Reports                 |         Very High         |                Includes SEC 10k financial reports and information from other finance sources like Yahoo Finance.                |                    [Here is a source on Apple's revenue growth rate over the past years:](https://exa.ai/search?q=Here+is+a+source+on+Apple%27s+revenue+growth+rate+over+the+past+years%3A\&filters=%7B%22numResults%22%3A30%2C%22domainFilterType%22%3A%22include%22%2C%22type%22%3A%22neural%22%2C%22startPublishedDate%22%3A%222023-11-18T22%3A35%3A50.022Z%22%2C%22useAutoprompt%22%3Afalse%2C%22resolvedSearchType%22%3A%22neural%22%7D\&resolvedSearchType=neural)                   |
+|                    GitHub repos                   |            High           |                                  Indexes open source code (which the Exa team use frequently!)                                  |                                                 [Here's a Github repo if you want to convert OpenAPI specs to Rust code:](https://exa.ai/search?q=Here%27s+a+Github+repo+if+you+want+to+convert+OpenAPI+specs+to+Rust+code%3A\&filters=%7B%22numResults%22%3A30%2C%22domainFilterType%22%3A%22include%22%2C%22type%22%3A%22neural%22%2C%22useAutoprompt%22%3Afalse%2C%22resolvedSearchType%22%3A%22neural%22%7D\&resolvedSearchType=neural)                                                |
+|                       Blogs                       |            High           |                      Excels at finding high quality reading material, particularly useful for niche topics                      |                                                          [If you're a huge fan of Japandi decor, you'd love this blog:](https://exa.ai/search?q=If+you%27re+a+huge+fan+of+Japandi+decor%2C+you%27d+love+this+blog%3A\&filters=%7B%22numResults%22%3A30%2C%22domainFilterType%22%3A%22include%22%2C%22type%22%3A%22neural%22%2C%22useAutoprompt%22%3Afalse%2C%22resolvedSearchType%22%3A%22neural%22%7D\&resolvedSearchType=neural)                                                         |
+|                 Places and things                 |            High           |              Covers a wide range of entities including hospitals, schools, restaurants, appliances, and electronics             |                                                             [Here is a high-rated Italian restaurant in downtown Chicago:](https://exa.ai/search?q=Here+is+a+high-rated+Italian+restaurant+in+downtown+Chicago%3A\&filters=%7B%22numResults%22%3A30%2C%22domainFilterType%22%3A%22include%22%2C%22type%22%3A%22neural%22%2C%22useAutoprompt%22%3Afalse%2C%22resolvedSearchType%22%3A%22neural%22%7D\&resolvedSearchType=neural)                                                            |
+|              Legal and policy sources             |            High           |           Strong coverage of legal and policy information, (e.g., including sources like CPUC, Justia, Findlaw, etc.)           |                        [Here is a common law case in california on marital property rights:](https://search.exa.ai/search?q=Here+is+a+common+law+case+in+california+on+marital+property+rights%3A\&filters=%7B%22numResults%22%3A30%2C%22domainFilterType%22%3A%22include%22%2C%22type%22%3A%22neural%22%2C%22useAutoprompt%22%3Afalse%2C%22includeDomains%22%3A%5B%22law.justia.com%22%5D%2C%22resolvedSearchType%22%3A%22neural%22%7D\&resolvedSearchType=neural)                        |
+| Government and international organization sources |            High           |                                Includes content from sources like the IMF and CDC amongst others                                |             [Here is a recent World Health Organization site on global vaccination rates:](https://exa.ai/search?q=Here+is+a+recent+World+Health+Organization+site+on+global+vaccination+rates%3A\&filters=%7B%22numResults%22%3A30%2C%22domainFilterType%22%3A%22include%22%2C%22type%22%3A%22neural%22%2C%22startPublishedDate%22%3A%222023-11-18T22%3A35%3A50.022Z%22%2C%22useAutoprompt%22%3Afalse%2C%22resolvedSearchType%22%3A%22neural%22%7D\&resolvedSearchType=neural)            |
+|                       Events                      |          Moderate         |                      Reasonable coverage of events in major municipalities, suggesting room for improvement                     | [Here is an AI hackathon in SF:](https://search.exa.ai/search?q=Here+is+an+AI+hackathon+in+SF\&filters=%7B%22numResults%22%3A30%2C%22domainFilterType%22%3A%22exclude%22%2C%22type%22%3A%22neural%22%2C%22startPublishedDate%22%3A%222024-07-02T23%3A36%3A15.511Z%22%2C%22useAutoprompt%22%3Afalse%2C%22endPublishedDate%22%3A%222024-07-09T23%3A36%3A15.511Z%22%2C%22excludeDomains%22%3A%5B%22twitter.com%22%5D%2C%22resolvedSearchType%22%3A%22neural%22%7D\&resolvedSearchType=neural) |
+|                        Jobs                       |          Moderate         |                                                    Can find some job listings                                                   |      [If you're looking for a software engineering job at a small startup working on an important mission, check out](https://search.exa.ai/search?q=If+you%27re+looking+for+a+software+engineering+job+at+a+small+startup+working+on+an+important+mission%2C+check+out\&filters=%7B%22numResults%22%3A30%2C%22domainFilterType%22%3A%22include%22%2C%22type%22%3A%22neural%22%2C%22useAutoprompt%22%3Afalse%2C%22resolvedSearchType%22%3A%22neural%22%7D\&resolvedSearchType=neural)      |
+
+
+
+# Create a task
+
+> Create an asynchronous research task that explores the web, gathers sources, synthesizes findings, and returns results with citations. Can be used to generate:
+1. Structured JSON matching an `outputSchema` you provide.
+2. A detailed markdown report when no schema is provided.
+
+The API responds immediately with a `researchId` for polling completion status. For more details, see [Exa Research](/reference/exa-research).
+
+Alternatively, you can use the OpenAI compatible [chat completions interface](/reference/chat-completions#research).
+
+
+## OpenAPI
+
+````yaml post /research/v1
+paths:
+  path: /research/v1
+  method: post
+  servers:
+    - url: https://api.exa.ai/research/v1/
+      description: Production
+  request:
+    security: []
+    parameters:
+      path: {}
+      query: {}
+      header: {}
+      cookie: {}
+    body:
+      application/json:
+        schemaArray:
+          - type: object
+            properties:
+              model:
+                allOf:
+                  - default: exa-research
+                    type:
+                      - string
+                    enum:
+                      - exa-research
+                      - exa-research-pro
+                    description: >-
+                      Research model to use. exa-research is faster and cheaper,
+                      while exa-research-pro provides more thorough analysis and
+                      stronger reasoning.
+              instructions:
+                allOf:
+                  - type:
+                      - string
+                    maxLength: 4096
+                    description: >-
+                      Instructions for what you would like research on. A good
+                      prompt clearly defines what information you want to find,
+                      how research should be conducted, and what the output
+                      should look like.
+              outputSchema:
+                allOf:
+                  - type:
+                      - object
+                    additionalProperties: {}
+                    description: >-
+                      JSON Schema to enforce structured output. When provided,
+                      the research output will be validated against this schema
+                      and returned as parsed JSON.
+            required: true
+            refIdentifier: '#/components/schemas/ResearchCreateRequestDtoClass'
+            examples:
+              - model: exa-research
+                instructions: What species of ant are similar to honeypot ants?
+            requiredProperties:
+              - instructions
+            example:
+              model: exa-research
+              instructions: What species of ant are similar to honeypot ants?
+        examples:
+          example:
+            value:
+              model: exa-research
+              instructions: What species of ant are similar to honeypot ants?
+  response:
+    '201':
+      application/json:
+        schemaArray:
+          - type: object
+            properties:
+              researchId:
+                allOf:
+                  - type:
+                      - string
+                    description: >-
+                      Unique identifier for tracking and retrieving this
+                      research request
+              createdAt:
+                allOf:
+                  - type:
+                      - number
+                    description: >-
+                      When the research was created (Unix timestamp in
+                      milliseconds)
+              model:
+                allOf:
+                  - default: exa-research
+                    type:
+                      - string
+                    enum:
+                      - exa-research
+                      - exa-research-pro
+                    description: The model used for this research request
+              instructions:
+                allOf:
+                  - type:
+                      - string
+                    description: The original research instructions provided
+              outputSchema:
+                allOf:
+                  - type:
+                      - object
+                    additionalProperties: {}
+                    description: The JSON Schema used to validate the output, if provided
+              status:
+                allOf:
+                  - type:
+                      - string
+                    enum:
+                      - pending
+            title: Pending
+            refIdentifier: '#/components/schemas/ResearchDtoClass'
+            examples: &ref_1
+              - &ref_0
+                researchId: 01jszdfs0052sg4jc552sg4jc5
+                model: exa-research
+                instructions: What species of ant are similar to honeypot ants?
+                status: running
+              - researchId: 01jszdfs0052sg4jc552sg4jc5
+                model: exa-research
+                instructions: What species of ant are similar to honeypot ants?
+                status: completed
+                output: Melophorus bagoti
+            requiredProperties:
+              - researchId
+              - createdAt
+              - instructions
+              - status
+            example: *ref_0
+          - type: object
+            properties:
+              researchId:
+                allOf:
+                  - type:
+                      - string
+                    description: >-
+                      Unique identifier for tracking and retrieving this
+                      research request
+              createdAt:
+                allOf:
+                  - type:
+                      - number
+                    description: >-
+                      When the research was created (Unix timestamp in
+                      milliseconds)
+              model:
+                allOf:
+                  - default: exa-research
+                    type:
+                      - string
+                    enum:
+                      - exa-research
+                      - exa-research-pro
+                    description: The model used for this research request
+              instructions:
+                allOf:
+                  - type:
+                      - string
+                    description: The original research instructions provided
+              outputSchema:
+                allOf:
+                  - type:
+                      - object
+                    additionalProperties: {}
+                    description: The JSON Schema used to validate the output, if provided
+              status:
+                allOf:
+                  - type:
+                      - string
+                    enum:
+                      - running
+              events:
+                allOf:
+                  - type:
+                      - array
+                    items:
+                      $ref: '#/components/schemas/ResearchEventDtoClass'
+                    description: >-
+                      Real-time log of operations as research progresses. Poll
+                      this endpoint or use ?stream=true for live updates.
+            title: Running
+            refIdentifier: '#/components/schemas/ResearchDtoClass'
+            examples: *ref_1
+            requiredProperties:
+              - researchId
+              - createdAt
+              - instructions
+              - status
+            example: *ref_0
+          - type: object
+            properties:
+              researchId:
+                allOf:
+                  - type:
+                      - string
+                    description: >-
+                      Unique identifier for tracking and retrieving this
+                      research request
+              createdAt:
+                allOf:
+                  - type:
+                      - number
+                    description: >-
+                      When the research was created (Unix timestamp in
+                      milliseconds)
+              model:
+                allOf:
+                  - default: exa-research
+                    type:
+                      - string
+                    enum:
+                      - exa-research
+                      - exa-research-pro
+                    description: The model used for this research request
+              instructions:
+                allOf:
+                  - type:
+                      - string
+                    description: The original research instructions provided
+              outputSchema:
+                allOf:
+                  - type:
+                      - object
+                    additionalProperties: {}
+                    description: The JSON Schema used to validate the output, if provided
+              status:
+                allOf:
+                  - type:
+                      - string
+                    enum:
+                      - completed
+              events:
+                allOf:
+                  - type:
+                      - array
+                    items:
+                      $ref: '#/components/schemas/ResearchEventDtoClass'
+                    description: >-
+                      Detailed log of all operations performed during research.
+                      Use ?events=true to include this field for debugging or
+                      monitoring progress.
+              output:
+                allOf:
+                  - type:
+                      - object
+                    properties:
+                      content:
+                        type:
+                          - string
+                        description: >-
+                          The complete research output as text. If outputSchema
+                          was provided, this is a JSON string.
+                      parsed:
+                        type:
+                          - object
+                        additionalProperties: {}
+                        description: >-
+                          Structured JSON object matching your outputSchema.
+                          Only present when outputSchema was provided and the
+                          output successfully validated.
+                    required:
+                      - content
+                    description: >-
+                      The final research results, containing both raw text and
+                      parsed JSON if outputSchema was provided
+              costDollars:
+                allOf:
+                  - type:
+                      - object
+                    properties:
+                      total:
+                        type:
+                          - number
+                        description: Total cost in USD for this research request
+                      numSearches:
+                        type:
+                          - number
+                        description: >-
+                          Count of web searches performed. Each search query
+                          counts as one search.
+                      numPages:
+                        type:
+                          - number
+                        description: >-
+                          Count of web pages fully crawled and processed. Only
+                          pages that were read in detail are counted.
+                      reasoningTokens:
+                        type:
+                          - number
+                        description: >-
+                          Total AI tokens used for reasoning, planning, and
+                          generating the final output
+                    required:
+                      - total
+                      - numSearches
+                      - numPages
+                      - reasoningTokens
+                    description: Detailed cost breakdown for billing purposes
+              finishedAt:
+                allOf:
+                  - type:
+                      - number
+                    description: >-
+                      When the research completed (Unix timestamp in
+                      milliseconds)
+            title: Completed
+            refIdentifier: '#/components/schemas/ResearchDtoClass'
+            examples: *ref_1
+            requiredProperties:
+              - researchId
+              - createdAt
+              - instructions
+              - status
+              - output
+              - costDollars
+              - finishedAt
+            example: *ref_0
+          - type: object
+            properties:
+              researchId:
+                allOf:
+                  - type:
+                      - string
+                    description: >-
+                      Unique identifier for tracking and retrieving this
+                      research request
+              createdAt:
+                allOf:
+                  - type:
+                      - number
+                    description: >-
+                      When the research was created (Unix timestamp in
+                      milliseconds)
+              model:
+                allOf:
+                  - default: exa-research
+                    type:
+                      - string
+                    enum:
+                      - exa-research
+                      - exa-research-pro
+                    description: The model used for this research request
+              instructions:
+                allOf:
+                  - type:
+                      - string
+                    description: The original research instructions provided
+              outputSchema:
+                allOf:
+                  - type:
+                      - object
+                    additionalProperties: {}
+                    description: The JSON Schema used to validate the output, if provided
+              status:
+                allOf:
+                  - type:
+                      - string
+                    enum:
+                      - canceled
+              events:
+                allOf:
+                  - type:
+                      - array
+                    items:
+                      $ref: '#/components/schemas/ResearchEventDtoClass'
+                    description: >-
+                      Detailed log of all operations performed during research.
+                      Use ?events=true to include this field for debugging or
+                      monitoring progress.
+              finishedAt:
+                allOf:
+                  - type:
+                      - number
+                    description: >-
+                      When the research was canceled (Unix timestamp in
+                      milliseconds)
+            title: Canceled
+            refIdentifier: '#/components/schemas/ResearchDtoClass'
+            examples: *ref_1
+            requiredProperties:
+              - researchId
+              - createdAt
+              - instructions
+              - status
+              - finishedAt
+            example: *ref_0
+          - type: object
+            properties:
+              researchId:
+                allOf:
+                  - type:
+                      - string
+                    description: >-
+                      Unique identifier for tracking and retrieving this
+                      research request
+              createdAt:
+                allOf:
+                  - type:
+                      - number
+                    description: >-
+                      When the research was created (Unix timestamp in
+                      milliseconds)
+              model:
+                allOf:
+                  - default: exa-research
+                    type:
+                      - string
+                    enum:
+                      - exa-research
+                      - exa-research-pro
+                    description: The model used for this research request
+              instructions:
+                allOf:
+                  - type:
+                      - string
+                    description: The original research instructions provided
+              outputSchema:
+                allOf:
+                  - type:
+                      - object
+                    additionalProperties: {}
+                    description: The JSON Schema used to validate the output, if provided
+              status:
+                allOf:
+                  - type:
+                      - string
+                    enum:
+                      - failed
+              events:
+                allOf:
+                  - type:
+                      - array
+                    items:
+                      $ref: '#/components/schemas/ResearchEventDtoClass'
+                    description: >-
+                      Detailed log of all operations performed during research.
+                      Use ?events=true to include this field for debugging or
+                      monitoring progress.
+              error:
+                allOf:
+                  - type:
+                      - string
+                    description: Human-readable error message explaining what went wrong.
+              finishedAt:
+                allOf:
+                  - type:
+                      - number
+                    description: When the research failed (Unix timestamp in milliseconds)
+            title: Failed
+            refIdentifier: '#/components/schemas/ResearchDtoClass'
+            examples: *ref_1
+            requiredProperties:
+              - researchId
+              - createdAt
+              - instructions
+              - status
+              - error
+              - finishedAt
+            example: *ref_0
+        examples:
+          example:
+            value:
+              researchId: 01jszdfs0052sg4jc552sg4jc5
+              model: exa-research
+              instructions: What species of ant are similar to honeypot ants?
+              status: running
+        description: Research request created
+  deprecated: false
+  type: path
+components:
+  schemas:
+    ResearchEventDtoClass:
+      oneOf:
+        - discriminator:
+            propertyName: eventType
+          oneOf:
+            - type:
+                - object
+              properties:
+                eventType:
+                  type:
+                    - string
+                  enum:
+                    - research-definition
+                instructions:
+                  type:
+                    - string
+                  description: The complete research instructions as provided
+                outputSchema:
+                  type:
+                    - object
+                  additionalProperties: {}
+                  description: The JSON Schema that will validate the final output
+                createdAt:
+                  type:
+                    - number
+                  description: When this event occurred (Unix timestamp in milliseconds)
+                researchId:
+                  type:
+                    - string
+                  description: The research request this event belongs to
+              required:
+                - eventType
+                - instructions
+                - createdAt
+                - researchId
+              title: Research Definition
+            - type:
+                - object
+              properties:
+                eventType:
+                  type:
+                    - string
+                  enum:
+                    - research-output
+                output:
+                  discriminator:
+                    propertyName: outputType
+                  oneOf:
+                    - type:
+                        - object
+                      properties:
+                        outputType:
+                          type:
+                            - string
+                          enum:
+                            - completed
+                        costDollars:
+                          type:
+                            - object
+                          properties:
+                            total:
+                              type:
+                                - number
+                              description: Total cost in USD for this research request
+                            numSearches:
+                              type:
+                                - number
+                              description: >-
+                                Count of web searches performed. Each search
+                                query counts as one search.
+                            numPages:
+                              type:
+                                - number
+                              description: >-
+                                Count of web pages fully crawled and processed.
+                                Only pages that were read in detail are counted.
+                            reasoningTokens:
+                              type:
+                                - number
+                              description: >-
+                                Total AI tokens used for reasoning, planning,
+                                and generating the final output
+                          required:
+                            - total
+                            - numSearches
+                            - numPages
+                            - reasoningTokens
+                        content:
+                          type:
+                            - string
+                          description: >-
+                            The complete research output as text. If
+                            outputSchema was provided, this is a JSON string.
+                        parsed:
+                          type:
+                            - object
+                          additionalProperties: {}
+                          description: >-
+                            Structured JSON object matching your outputSchema.
+                            Only present when outputSchema was provided and the
+                            output successfully validated.
+                      required:
+                        - outputType
+                        - costDollars
+                        - content
+                      title: Completed
+                    - type:
+                        - object
+                      properties:
+                        outputType:
+                          type:
+                            - string
+                          enum:
+                            - failed
+                        error:
+                          type:
+                            - string
+                          description: >-
+                            Detailed error message explaining why the research
+                            failed
+                      required:
+                        - outputType
+                        - error
+                      title: Failed
+                  description: >-
+                    The final research result, either successful with data or
+                    failed with error
+                createdAt:
+                  type:
+                    - number
+                  description: When this event occurred (Unix timestamp in milliseconds)
+                researchId:
+                  type:
+                    - string
+                  description: The research request this event belongs to
+              required:
+                - eventType
+                - output
+                - createdAt
+                - researchId
+              title: Research Output
+        - discriminator:
+            propertyName: eventType
+          oneOf:
+            - type:
+                - object
+              properties:
+                eventType:
+                  type:
+                    - string
+                  enum:
+                    - plan-definition
+                planId:
+                  type:
+                    - string
+                  description: Identifier for this planning cycle
+                createdAt:
+                  type:
+                    - number
+                  description: When this event occurred (Unix timestamp in milliseconds)
+                researchId:
+                  type:
+                    - string
+                  description: The research request this event belongs to
+              required:
+                - eventType
+                - planId
+                - createdAt
+                - researchId
+              title: Plan Definition
+            - type:
+                - object
+              properties:
+                eventType:
+                  type:
+                    - string
+                  enum:
+                    - plan-operation
+                planId:
+                  type:
+                    - string
+                  description: Which plan this operation belongs to
+                operationId:
+                  type:
+                    - string
+                  description: Unique identifier for this specific operation
+                data:
+                  discriminator:
+                    propertyName: type
+                  oneOf:
+                    - type:
+                        - object
+                      properties:
+                        type:
+                          type:
+                            - string
+                          enum:
+                            - think
+                        content:
+                          type:
+                            - string
+                          description: The AI's reasoning process and decision-making steps
+                      required:
+                        - type
+                        - content
+                      title: Think
+                    - type:
+                        - object
+                      properties:
+                        type:
+                          type:
+                            - string
+                          enum:
+                            - search
+                        searchType:
+                          type:
+                            - string
+                          enum:
+                            - neural
+                            - keyword
+                            - auto
+                            - fast
+                          description: >-
+                            Search algorithm used (neural for semantic search,
+                            keyword for exact matches)
+                        goal:
+                          type:
+                            - string
+                          description: What the AI is trying to find with this search
+                        query:
+                          type:
+                            - string
+                          description: The exact search query sent to the search engine
+                        results:
+                          type:
+                            - array
+                          items:
+                            type:
+                              - object
+                            properties:
+                              url:
+                                type:
+                                  - string
+                            required:
+                              - url
+                          description: URLs returned by the search, ranked by relevance
+                        pageTokens:
+                          type:
+                            - number
+                          description: Token cost for processing search result snippets
+                      required:
+                        - type
+                        - searchType
+                        - query
+                        - results
+                        - pageTokens
+                      title: Search
+                    - type:
+                        - object
+                      properties:
+                        type:
+                          type:
+                            - string
+                          enum:
+                            - crawl
+                        goal:
+                          type:
+                            - string
+                          description: What information the AI expects to find on this page
+                        result:
+                          type:
+                            - object
+                          properties:
+                            url:
+                              type:
+                                - string
+                          required:
+                            - url
+                          description: The specific page that was crawled
+                        pageTokens:
+                          type:
+                            - number
+                          description: Token cost for processing the full page content
+                      required:
+                        - type
+                        - result
+                        - pageTokens
+                      title: Crawl
+                  description: The actual operation performed (think, search, or crawl)
+                createdAt:
+                  type:
+                    - number
+                  description: When this event occurred (Unix timestamp in milliseconds)
+                researchId:
+                  type:
+                    - string
+                  description: The research request this event belongs to
+              required:
+                - eventType
+                - planId
+                - operationId
+                - data
+                - createdAt
+                - researchId
+              title: Plan Operation
+            - type:
+                - object
+              properties:
+                eventType:
+                  type:
+                    - string
+                  enum:
+                    - plan-output
+                planId:
+                  type:
+                    - string
+                  description: Which plan is producing this output
+                output:
+                  discriminator:
+                    propertyName: outputType
+                  oneOf:
+                    - type:
+                        - object
+                      properties:
+                        outputType:
+                          type:
+                            - string
+                          enum:
+                            - tasks
+                        reasoning:
+                          type:
+                            - string
+                          description: Why these specific tasks were chosen
+                        tasksInstructions:
+                          type:
+                            - array
+                          items:
+                            type:
+                              - string
+                          description: >-
+                            List of task instructions that will be executed in
+                            parallel
+                      required:
+                        - outputType
+                        - reasoning
+                        - tasksInstructions
+                      title: Tasks
+                    - type:
+                        - object
+                      properties:
+                        outputType:
+                          type:
+                            - string
+                          enum:
+                            - stop
+                        reasoning:
+                          type:
+                            - string
+                          description: Why the AI decided to stop researching
+                      required:
+                        - outputType
+                        - reasoning
+                      title: Stop
+                  description: >-
+                    The plan's decision: either generate tasks or stop
+                    researching
+                createdAt:
+                  type:
+                    - number
+                  description: When this event occurred (Unix timestamp in milliseconds)
+                researchId:
+                  type:
+                    - string
+                  description: The research request this event belongs to
+              required:
+                - eventType
+                - planId
+                - output
+                - createdAt
+                - researchId
+              title: Plan Output
+        - discriminator:
+            propertyName: eventType
+          oneOf:
+            - type:
+                - object
+              properties:
+                eventType:
+                  type:
+                    - string
+                  enum:
+                    - task-definition
+                planId:
+                  type:
+                    - string
+                  description: The plan that generated this task
+                taskId:
+                  type:
+                    - string
+                  description: Identifier for tracking this specific task
+                instructions:
+                  type:
+                    - string
+                  description: What this task should accomplish
+                createdAt:
+                  type:
+                    - number
+                  description: When this event occurred (Unix timestamp in milliseconds)
+                researchId:
+                  type:
+                    - string
+                  description: The research request this event belongs to
+              required:
+                - eventType
+                - planId
+                - taskId
+                - instructions
+                - createdAt
+                - researchId
+              title: Task Definition
+            - type:
+                - object
+              properties:
+                eventType:
+                  type:
+                    - string
+                  enum:
+                    - task-operation
+                planId:
+                  type:
+                    - string
+                  description: The plan that owns this task
+                taskId:
+                  type:
+                    - string
+                  description: Which task is performing this operation
+                operationId:
+                  type:
+                    - string
+                  description: Unique identifier for this specific operation
+                data:
+                  discriminator:
+                    propertyName: type
+                  oneOf:
+                    - type:
+                        - object
+                      properties:
+                        type:
+                          type:
+                            - string
+                          enum:
+                            - think
+                        content:
+                          type:
+                            - string
+                          description: The AI's reasoning process and decision-making steps
+                      required:
+                        - type
+                        - content
+                      title: Think
+                    - type:
+                        - object
+                      properties:
+                        type:
+                          type:
+                            - string
+                          enum:
+                            - search
+                        searchType:
+                          type:
+                            - string
+                          enum:
+                            - neural
+                            - keyword
+                            - auto
+                            - fast
+                          description: >-
+                            Search algorithm used (neural for semantic search,
+                            keyword for exact matches)
+                        goal:
+                          type:
+                            - string
+                          description: What the AI is trying to find with this search
+                        query:
+                          type:
+                            - string
+                          description: The exact search query sent to the search engine
+                        results:
+                          type:
+                            - array
+                          items:
+                            type:
+                              - object
+                            properties:
+                              url:
+                                type:
+                                  - string
+                            required:
+                              - url
+                          description: URLs returned by the search, ranked by relevance
+                        pageTokens:
+                          type:
+                            - number
+                          description: Token cost for processing search result snippets
+                      required:
+                        - type
+                        - searchType
+                        - query
+                        - results
+                        - pageTokens
+                      title: Search
+                    - type:
+                        - object
+                      properties:
+                        type:
+                          type:
+                            - string
+                          enum:
+                            - crawl
+                        goal:
+                          type:
+                            - string
+                          description: What information the AI expects to find on this page
+                        result:
+                          type:
+                            - object
+                          properties:
+                            url:
+                              type:
+                                - string
+                          required:
+                            - url
+                          description: The specific page that was crawled
+                        pageTokens:
+                          type:
+                            - number
+                          description: Token cost for processing the full page content
+                      required:
+                        - type
+                        - result
+                        - pageTokens
+                      title: Crawl
+                  description: The actual operation performed within this task
+                createdAt:
+                  type:
+                    - number
+                  description: When this event occurred (Unix timestamp in milliseconds)
+                researchId:
+                  type:
+                    - string
+                  description: The research request this event belongs to
+              required:
+                - eventType
+                - planId
+                - taskId
+                - operationId
+                - data
+                - createdAt
+                - researchId
+              title: Task Operation
+            - type:
+                - object
+              properties:
+                eventType:
+                  type:
+                    - string
+                  enum:
+                    - task-output
+                planId:
+                  type:
+                    - string
+                  description: The plan that owns this task
+                taskId:
+                  type:
+                    - string
+                  description: Which task produced this output
+                output:
+                  type:
+                    - object
+                  properties:
+                    outputType:
+                      type:
+                        - string
+                      enum:
+                        - completed
+                    content:
+                      type:
+                        - string
+                      description: The information gathered by this task
+                  required:
+                    - outputType
+                    - content
+                  description: The successful completion result of this task
+                createdAt:
+                  type:
+                    - number
+                  description: When this event occurred (Unix timestamp in milliseconds)
+                researchId:
+                  type:
+                    - string
+                  description: The research request this event belongs to
+              required:
+                - eventType
+                - planId
+                - taskId
+                - output
+                - createdAt
+                - researchId
+              title: Task Output
+
+````

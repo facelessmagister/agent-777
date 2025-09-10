@@ -1,0 +1,86 @@
+Google Scholarly Articles API
+For some searches, Google search results includes a Scholarly Articles block. SerpApi is able to scrape, extract and make sense of this information.
+
+API Examples
+
+JSON structure overview
+
+{
+  ...
+  "scholarly_articles": {
+    "title": "String - Title of the Scholarly Articles",
+    "link": "String - Link of the Scholarly Articles",
+    "serpapi_link": "String - SerpApi link of google scholar search",
+    "articles": [
+      {
+        "title": "String - Title of the article",
+        "link": "String - Link of the article",
+        "displayed_link": "String - Displayed link of the article",
+        "authors": "String - Author of the article",
+        "cited_by": "String - Cited by of the article",
+        "extracted_cited_by_number": "String - Number of citations",
+        "highlighted_words": "Array - Highlighted words of the title"
+      },
+    ]
+  },
+  ...
+}
+
+Results for:
+coronavirus effect research:
+GET:
+https://serpapi.com/search.json?q=coronavirus+effect+research&device=desktop
+
+const { getJson } = require("serpapi");
+
+getJson({
+  q: "coronavirus effect research",
+  device: "desktop",
+  api_key: "e16033efaefadd6ed3d0cb366d296fddaf8744df401bd5c2c75fd27d696b15ba"
+}, (json) => {
+  console.log(json["scholarly_articles"]);
+});
+
+JSON Example
+{
+  ...
+  "scholarly_articles": {
+    "title": "Scholarly articles for coronavirus effect research",
+    "link": "https://scholar.google.com/scholar?q=coronavirus+effect+research&hl=en&as_sdt=0&as_vis=1&oi=scholart",
+    "serpapi_link": "https://serpapi.com/search.json?engine=google_scholar&hl=en&q=coronavirus+effect+research",
+    "articles": [
+      {
+        "title": "Effect of Coronavirus disease (COVID-19) to tourism …",
+        "link": "http://journal-repository.theshillonga.com/index.php/ijaers/article/view/1858/1742",
+        "author": "Bakar",
+        "cited_by": "Cited by 477",
+        "highlight_words": [
+          "Effect",
+          "Coronavirus",
+          "COVID"
+        ]
+      },
+      {
+        "title": "The effect of Coronavirus (COVID-19) in the tourism …",
+        "link": "https://www.academia.edu/download/63337191/Covid-19_Tourism20200517-45513-2wbn20.pdf",
+        "author": "Hoque",
+        "cited_by": "Cited by 460",
+        "highlight_words": [
+          "effect",
+          "Coronavirus",
+          "COVID"
+        ]
+      },
+      {
+        "title": "Rapid review for the anti-coronavirus effect of …",
+        "link": "https://www.jstage.jst.go.jp/article/ddt/14/2/14_2020.01015/_pdf",
+        "author": "Li",
+        "cited_by": "Cited by 77",
+        "highlight_words": [
+          "coronavirus effect"
+        ]
+      }
+    ]
+  },
+  ...
+}
