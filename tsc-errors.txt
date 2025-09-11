@@ -1,0 +1,50 @@
+﻿components/novels/novel-form.tsx(53,5): error TS2322: Type 'Resolver<{ title: string; status?: "draft" | "in_progress" | "completed" | "published" | undefined; description?: string | undefined; genre?: string[] | undefined; coverImageUrl?: string | undefined; }, any, { ...; }>' is not assignable to type 'Resolver<{ status: "draft" | "in_progress" | "completed" | "published"; title: string; description?: string | undefined; genre?: string[] | undefined; coverImageUrl?: string | undefined; }, any, { ...; }>'.
+  Types of parameters 'options' and 'options' are incompatible.
+    Type 'ResolverOptions<{ status: "draft" | "in_progress" | "completed" | "published"; title: string; description?: string | undefined; genre?: string[] | undefined; coverImageUrl?: string | undefined; }>' is not assignable to type 'ResolverOptions<{ title: string; status?: "draft" | "in_progress" | "completed" | "published" | undefined; description?: string | undefined; genre?: string[] | undefined; coverImageUrl?: string | undefined; }>'.
+      Type '"draft" | "in_progress" | "completed" | "published" | undefined' is not assignable to type '"draft" | "in_progress" | "completed" | "published"'.
+        Type 'undefined' is not assignable to type '"draft" | "in_progress" | "completed" | "published"'.
+components/novels/novel-form.tsx(105,41): error TS2345: Argument of type '(data: NovelFormValues) => Promise<void>' is not assignable to parameter of type 'SubmitHandler<TFieldValues>'.
+  Types of parameters 'data' and 'data' are incompatible.
+    Type 'TFieldValues' is not assignable to type '{ status: "draft" | "in_progress" | "completed" | "published"; title: string; description?: string | undefined; genre?: string[] | undefined; coverImageUrl?: string | undefined; }'.
+      Type 'FieldValues' is missing the following properties from type '{ status: "draft" | "in_progress" | "completed" | "published"; title: string; description?: string | undefined; genre?: string[] | undefined; coverImageUrl?: string | undefined; }': status, title
+components/novels/novel-form.tsx(111,26): error TS7031: Binding element 'field' implicitly has an 'any' type.
+components/novels/novel-form.tsx(125,26): error TS7031: Binding element 'field' implicitly has an 'any' type.
+components/novels/novel-form.tsx(199,26): error TS7031: Binding element 'field' implicitly has an 'any' type.
+components/novels/novel-form.tsx(219,26): error TS7031: Binding element 'field' implicitly has an 'any' type.
+lib/auth-options.ts(22,13): error TS2322: Type '(credentials: any) => Promise<{ id: any; email: any; name: any; }>' is not assignable to type '(credentials: Partial<Record<"email" | "password", unknown>>, request: Request) => Awaitable<User | null>'.
+  Type 'Promise<{ id: any; email: any; name: any; }>' is not assignable to type 'Awaitable<User | null>'.
+    Type 'Promise<{ id: any; email: any; name: any; }>' is not assignable to type 'PromiseLike<User | null>'.
+      Types of property 'then' are incompatible.
+        Type '<TResult1 = { id: any; email: any; name: any; }, TResult2 = never>(onfulfilled?: ((value: { id: any; email: any; name: any; }) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<...>) | ... 1 more ... | undefined) => Promise<...>' is not assignable to type '<TResult1 = User | null, TResult2 = never>(onfulfilled?: ((value: User | null) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<...>) | null | undefined) => PromiseLike<...>'.
+          Types of parameters 'onfulfilled' and 'onfulfilled' are incompatible.
+            Types of parameters 'value' and 'value' are incompatible.
+              Property 'type' is missing in type '{ id: any; email: any; name: any; }' but required in type 'User'.
+lib/auth.ts(14,14): error TS2451: Cannot redeclare block-scoped variable 'getServerSession'.
+lib/auth.ts(26,14): error TS2451: Cannot redeclare block-scoped variable 'createSession'.
+lib/auth.ts(40,14): error TS2451: Cannot redeclare block-scoped variable 'deleteSession'.
+lib/auth.ts(45,14): error TS2451: Cannot redeclare block-scoped variable 'authOptions'.
+lib/db/schema.ts(130,13): error TS2300: Duplicate identifier 'Document'.
+lib/db/schema.ts(216,13): error TS2300: Duplicate identifier 'Document'.
+lib/db/schema.ts(220,3): error TS2322: Type 'ZodString' is not assignable to type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>> | ((schema: ZodString) => ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>) | undefined'.
+  Type 'ZodString' is missing the following properties from type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>': def, type, check, clone, and 6 more.
+lib/db/schema.ts(221,3): error TS2322: Type 'ZodOptional<ZodString>' is not assignable to type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>> | ((schema: ZodString) => ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>) | undefined'.
+  Type 'ZodOptional<ZodString>' is missing the following properties from type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>': def, type, check, clone, and 6 more.
+lib/db/schema.ts(222,3): error TS2322: Type 'ZodOptional<ZodArray<ZodString, "many">>' is not assignable to type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>> | ((schema: ZodArray<ZodString>) => ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>) | undefined'.
+  Type 'ZodOptional<ZodArray<ZodString, "many">>' is missing the following properties from type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>': def, type, check, clone, and 6 more.
+lib/db/schema.ts(223,3): error TS2322: Type 'ZodOptional<ZodEnum<["draft", "in_progress", "completed", "published"]>>' is not assignable to type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>> | ((schema: ZodEnum<{ draft: "draft"; in_progress: "in_progress"; completed: "completed"; published: "published"; }>) => ZodType<...>) | undefined'.
+  Type 'ZodOptional<ZodEnum<["draft", "in_progress", "completed", "published"]>>' is missing the following properties from type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>': def, type, check, clone, and 6 more.
+lib/db/schema.ts(224,3): error TS2322: Type 'ZodUnion<[ZodOptional<ZodString>, ZodLiteral<"">]>' is not assignable to type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>> | ((schema: ZodString) => ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>) | undefined'.
+  Type 'ZodUnion<[ZodOptional<ZodString>, ZodLiteral<"">]>' is missing the following properties from type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>': def, type, check, clone, and 6 more.
+lib/db/schema.ts(228,3): error TS2322: Type 'ZodString' is not assignable to type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>> | ((schema: ZodString) => ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>) | undefined'.
+  Type 'ZodString' is missing the following properties from type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>': def, type, check, clone, and 6 more.
+lib/db/schema.ts(229,3): error TS2322: Type 'ZodEnum<["chapter", "character", "world", "note"]>' is not assignable to type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>> | ((schema: ZodEnum<{ chapter: "chapter"; character: "character"; world: "world"; note: "note"; }>) => ZodType<unknown, unknown, $ZodTypeInternals<...>>) | undefined'.
+  Type 'ZodEnum<["chapter", "character", "world", "note"]>' is missing the following properties from type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>': def, type, check, clone, and 6 more.
+lib/db/schema.ts(230,3): error TS2322: Type 'ZodOptional<ZodAny>' is not assignable to type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>> | ((schema: ZodType<Json, unknown, $ZodTypeInternals<Json, unknown>>) => ZodType<unknown, unknown, $ZodTypeInternals<...>>) | undefined'.
+  Type 'ZodOptional<ZodAny>' is missing the following properties from type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>': def, type, check, clone, and 6 more.
+lib/db/schema.ts(231,3): error TS2322: Type 'ZodOptional<ZodAny>' is not assignable to type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>> | ((schema: ZodType<Json, unknown, $ZodTypeInternals<Json, unknown>>) => ZodType<unknown, unknown, $ZodTypeInternals<...>>) | undefined'.
+  Type 'ZodOptional<ZodAny>' is missing the following properties from type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>': def, type, check, clone, and 6 more.
+lib/prisma.ts(20,16): error TS2300: Duplicate identifier 'prisma'.
+tests/e2e/session.test.ts(24,9): error TS2322: Type 'Request | null' is not assignable to type 'Request'.
+  Type 'null' is not assignable to type 'Request'.
+tests/e2e/session.test.ts(66,9): error TS2322: Type 'Request | null' is not assignable to type 'Request'.
+  Type 'null' is not assignable to type 'Request'.

@@ -27,7 +27,9 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "next.config.js"
+    "next.config.js",
+    ".prisma/client/index.d.ts",
+    "types/**/*.d.ts"
   ],
   "exclude": ["node_modules"]
 }

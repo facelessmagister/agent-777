@@ -2,8 +2,6 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import type { Session } from 'next-auth';
 import { getDocumentById } from '@/lib/db/queries';
-import type { Document } from '@/lib/db/schema';
-import type { ArtifactKind } from '@/components/artifact';
 
 interface ValidateDocumentProps {
   session: Session;

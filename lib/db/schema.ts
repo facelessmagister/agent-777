@@ -9,7 +9,11 @@ import {
   primaryKey,
   foreignKey,
   boolean,
+  integer,
+  jsonb,
 } from 'drizzle-orm/pg-core';
+import { createInsertSchema } from 'drizzle-zod';
+import { z } from 'zod';
 
 export const user = pgTable('User', {
   id: uuid('id').primaryKey().notNull().defaultRandom(),
@@ -123,7 +127,8 @@ export const document = pgTable(
   },
 );
 
-export type Document = InferSelectModel<typeof document>;
+// Row type helpers
+export type NovelDocument = InferSelectModel<typeof novelDocument>;
 
 export const suggestion = pgTable(
   'Suggestion',
@@ -168,3 +173,62 @@ export const stream = pgTable(
 );
 
 export type Stream = InferSelectModel<typeof stream>;
+
+// Novel-related schemas
+export const novel = pgTable('novel', {
+  id: uuid('id').primaryKey().notNull().defaultRandom(),
+  title: varchar('title', { length: 255 }).notNull(),
+  description: text('description'),
+  genre: varchar('genre', { length: 50 }).array(),
+  status: varchar('status', { 
+    enum: ['draft', 'in_progress', 'completed', 'published'] 
+  }).notNull().default('draft'),
+  coverImageUrl: text('cover_image_url'),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export type Novel = InferSelectModel<typeof novel>;
+
+export const novelDocument = pgTable('novel_document', {
+  id: uuid('id').primaryKey().notNull().defaultRandom(),
+  novelId: uuid('novel_id')
+    .notNull()
+    .references(() => novel.id, { onDelete: 'cascade' }),
+  type: varchar('type', { 
+    enum: ['chapter', 'character', 'world', 'note'] 
+  }).notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  content: jsonb('content'),
+  metadata: jsonb('metadata').default({}),
+  version: integer('version').notNull().default(1),
+  isCurrent: boolean('is_current').notNull().default(true),
+  previousVersionId: uuid('previous_version_id'),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Avoid conflict with DOM lib's global Document type
+export type AppDocument = InferSelectModel<typeof document>;
+
+// Schema for validation
+export const insertNovelSchema = createInsertSchema(novel, {
+  title: z.string().min(1, 'Title is required').max(255),
+  description: z.string().optional(),
+  genre: z.array(z.string()).optional(),
+  status: z.enum(['draft', 'in_progress', 'completed', 'published']).optional(),
+  coverImageUrl: z.string().url().optional().or(z.literal('')),
+} as any);
+
+export const insertNovelDocumentSchema = createInsertSchema(novelDocument, {
+  title: z.string().min(1, 'Title is required').max(255),
+  type: z.enum(['chapter', 'character', 'world', 'note']),
+  content: z.any().optional(),
+  metadata: z.any().optional(),
+} as any);
